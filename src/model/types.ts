@@ -1,316 +1,173 @@
-/**
- * Domain model for the MsAb construct designer.
- *
- * ID convention (spec section 2):
- *   BB-id   building block, a region-level sequence element
- *   INS-id  insert, building blocks assembled into one chain-coding sequence
- *   VEC-id  vector / backbone, typically already carrying constant regions
- *   CC-id   construct, an insert combined with a vector
- *   REG-id  registered chain, a construct checked into inventory
- *   FMT-id  format, the molecule's shape and specificity across both arms
- *   MOL-id  molecule, the thing actually made: this format built from these
- *           registered chains
- */
+export type Tier = 1 | 2 | 3 | 4 | 5 | 6;
+export type Grain = 'fmt' | 'chn' | 'var' | 'con';
+export type Mark = 'in' | 'out';
 
-export type PartType =
-  | 'promoter'
-  | 'vh'
-  | 'vl'
-  | 'linker'
-  | 'hinge'
-  | 'ch1'
-  | 'ch2'
-  | 'ch3'
-  | 'cl'
-  | 'payload'
-  | 'tag'
-  | 'term';
-
-/**
- * Which vocabulary a component belongs to. Regulatory elements only exist as
- * DNA; everything that ends up in the protein is browsable either way, and the
- * rail shows one alphabet at a time.
- */
-export type Alphabet = 'nt' | 'aa';
-
-/** Color families encode chain lineage, not part category (spec section 8a). */
-export type Lineage = 'heavy' | 'light' | 'generic';
-
-export type ChainKind = 'heavy' | 'light';
-
-/** Resolution is a view setting, never a data model choice (spec section 7). */
-export type Resolution = 1 | 2 | 3;
-
-export interface BuildingBlock {
+export interface Format {
   id: string;
   name: string;
-  type: PartType;
-  lineage: Lineage;
-  /** IgG1 / IgG4 / kappa / lambda — drives constant-region compatibility checks. */
-  isotype?: string;
-  /** Antigen this sequence binds. Colors the glyph on the design pad. */
-  target?: string;
-  /** 'dna' parts have no amino-acid representation and are hidden in aa mode. */
-  molecule: 'dna' | 'protein';
-  /** Searchable free-text tags so users never need to recall an ID. */
-  features: string[];
-  lengthBp: number;
+  cls: string;
+  target: string;
+  spec: 'Monospecific' | 'Bispecific' | 'Trispecific';
+  val: string;
+  half: number;
+  full: number;
+  trans: number;
+  cis: number;
+  lcreq: string;
+  lcid: string;
+  hcreq: string;
+  hcid: string;
+  mutreq: 'Yes' | 'No';
+  mutset: string;
+  kih: 'Present' | 'Absent';
+  kihass: string;
+  chg: 'Present' | 'Absent' | 'Optional';
+  chgdet: string;
+  k447: string;
+  vectors: string[];
+  alt: string[];
+  chains: string[];
+  plasmids: number;
+  ratio: string;
+  mispair: string;
+  capture: string;
+  polish: string;
+  notes: string;
+  fc: 'Yes' | 'No';
+  conj: 'Yes' | 'No';
+  score: number;
+  tierN: Tier;
+  tier: string;
+  rank: number;
+  drivers: string;
 }
 
-/** A named region of the backbone, drawn on the construct map's backbone track. */
-export interface BackboneFeature {
+export interface Chain {
+  id: string;
   name: string;
-  kind: 'ori' | 'marker' | 'mcs' | 'polyA' | 'constant';
-  lengthBp: number;
-  strand: 1 | -1;
+  fam: 'Heavy' | 'Light' | 'Single chain' | 'Single-chain Fc' | 'Fc only';
+  half: string;
+  cis: string;
+  fvmode: string;
+  partner: string;
+  slots: string;
+  module: string;
+  crossover: string;
+  vectors: string[];
+  formats: string[];
+  note: string;
+  rank: number;
+}
+
+export interface VSlot {
+  t: 'VH' | 'VL' | 'VHH' | 'ORF';
+  pos: string;
+  note: string;
 }
 
 export interface Vector {
   id: string;
-  name: string;
-  /** An empty backbone carries no constant regions and accepts any isotype. */
-  isEmpty: boolean;
-  /** Constant-region slots the backbone already supplies. */
-  provides: PartType[];
-  isotype?: string;
-  resistance: string;
-  lengthBp: number;
-  backboneFeatures: BackboneFeature[];
-}
-
-/** A pre-assembled chain-coding sequence that can be reused wholesale. */
-export interface Insert {
-  id: string;
-  name: string;
-  kind: ChainKind;
-  /** Block ids keyed by the slot type they fill. */
-  blocks: Partial<Record<PartType, string>>;
-  features: string[];
-}
-
-export interface Construct {
-  id: string;
-  insertId: string;
-  vectorId: string;
-  chainName: string;
-  createdAt: number;
-}
-
-/** What is physically on the shelf for a registered chain. */
-export interface InventoryRecord {
-  /** Freezer, rack and box. */
-  location: string;
-  /** Position within the box, so the tube can actually be found. */
-  position: string;
-  volumeUl: number;
-  concentrationNgUl: number;
-  /** Total plasmid on hand; volume times concentration. */
-  plasmidUg: number;
-  glycerolStock: boolean;
-}
-
-export interface RegisteredChain {
-  id: string;
-  constructId: string;
-  chainName: string;
-  /** The bench chain it came from, so a registration can be reviewed in place. */
-  chainId?: string;
-  registeredAt: number;
-  inventory: InventoryRecord;
-}
-
-/**
- * One slot on a bench row. `blockIds` is a stack: more than one option expresses
- * combinatorics spatially rather than as typed set notation (spec section 4.5).
- */
-export interface Slot {
-  type: PartType;
-  level: Resolution;
-  blockIds: string[];
-}
-
-export interface ChainDesign {
-  id: string;
-  name: string;
-  kind: ChainKind;
-  slots: Slot[];
-  vectorId: string | null;
-  note?: string;
-  /** Per-row resolution override, independent of the global setting. */
-  resolutionOverride?: Resolution;
-  /** One CC-id per combinatorial variant, minted at assembly. */
-  constructIds: string[];
-  /** One REG-id per construct checked into inventory. */
-  regIds: string[];
-}
-
-export interface BenchGroup {
-  kind: 'group';
-  id: string;
-  name: string;
-  collapsed: boolean;
-  children: string[];
-}
-
-export interface BenchChain {
-  kind: 'chain';
-  id: string;
-}
-
-/** The bench is a flat list; grouping is one level deep in v0 (open question 9.1). */
-export type BenchNode = BenchChain | BenchGroup;
-
-/**
- * One well on the campaign plate. A molecule is the combination of chains in
- * this well; the same chain id can appear in many wells (a shared Fc or common
- * light chain), so bulk-selecting wells puts that chain on the bench once.
- */
-export interface PlateWell {
-  /** Address on the plate, `A1` … `H12`. */
-  id: string;
-  /** Luma molecule UID for the contents of this well. */
-  lumaUid: string;
-  row: number;
-  col: number;
-  /** Chains that comprise this well's molecule, in bench order. */
-  chainIds: string[];
-  /** Pad format for this well; edited when the well is the primary selection. */
-  format: FormatDesign;
-}
-
-/** Where a 96-well plate sits in today's work queue. */
-export type PlateQueueStatus = 'queued' | 'active' | 'in-progress' | 'done';
-
-/**
- * One plate the operator will cycle through today. The live bench edits
- * `AppState.plate`; the queue holds a snapshot so switching plates does not
- * throw work away.
- */
-export interface QueuedPlate {
-  id: string;
-  barcode: string;
-  name: string;
-  program: string;
-  operator: string;
-  status: PlateQueueStatus;
-  wellCount: number;
-  formatLabel: string;
-  due: string;
+  role: string;
+  fam: 'Heavy' | 'Light' | 'Single chain' | 'Fc only';
+  insert: string;
+  module: string;
+  eng: string;
+  cat: string;
+  numbering: string;
+  sp: string;
+  method: string;
+  o5: string;
+  o3: string;
+  promoter: string;
+  sel: string;
+  prota: string;
+  protaFull: string;
+  iso: string;
+  needsInsert: 'Yes' | 'No';
+  slots: VSlot[];
+  usedby: string[];
   note: string;
-  wells: PlateWell[];
-  /**
-   * Where this plate sits in the expression/purification process matrix when it
-   * is not the live bench plate. The open plate is scored from its chains instead.
-   */
-  pepStage: number;
+  rank: number;
 }
 
-/**
- * BioGlyph building blocks (docs.bioglyph.app — Design Pad). Shape encodes the
- * building block, color encodes the sequence/target it carries.
- */
-export type FcBbKind = 'homofc' | 'heterofc';
-
-export type BbKind =
-  | 'fab'
-  | 'scfab'
-  | 'xfab'
-  | 'scfv'
-  | 'vhh'
-  | 'mutein'
-  | 'miniprotein'
-  | 'denovo'
-  | 'reagent'
-  | 'tag'
-  | 'fc'
-  | FcBbKind
-  | 'empty';
-
-export type ArmId = 'left' | 'right';
-
-export interface ArmDesign {
-  id: ArmId;
-  bb: BbKind;
-  /** The chain that carries this arm's heavy-side coding sequence. */
-  heavyChainId: string | null;
-  /**
-   * The light chain this arm pairs with. Building blocks that need one start out
-   * unassigned: whether to share one light chain between the arms is a decision
-   * the designer makes, not a default the app applies.
-   */
-  lightChainId: string | null;
-  /** Building blocks fused to the arm by proximity, in order. */
-  fused: BbKind[];
+export interface Seed {
+  formats: Format[];
+  chains: Chain[];
+  vectors: Vector[];
+  partners: [string, string][];
+  tiers: Record<string, string>;
 }
 
-/** How the arms that need a light chain get one. */
-export type LightChainMode = 'common' | 'per-arm' | 'unset';
+export type Marks = Record<string, Mark>;
 
-/**
- * The molecule under design. Symmetry across the Y-axis through the Fc decides
- * whether a homodimeric or heterodimeric Fc is the correct choice.
- */
-export interface FormatDesign {
-  arms: Record<ArmId, ArmDesign>;
-  /** The Fc scaffold building block, chosen on the pad rather than inferred. */
-  fc: FcBbKind | 'none';
-  /** Format identity is reused whenever the same format recurs. */
-  formatId: string | null;
-  /** The molecule built from this format's registered chains, once registered. */
-  moleculeId: string | null;
+export interface Sel {
+  fmt: Marks;
+  chn: Marks;
+  con: Marks;
 }
 
-export type CheckStatus = 'pass' | 'warn' | 'fail';
+export interface Preset {
+  name: string;
+  n: number;
+  sel: Sel;
+}
 
-export interface QcCheck {
-  id: string;
+export interface State {
+  sel: Sel;
+  variants: string;
+  library: string;
+  assign: Record<string, Record<string, string>>;
+  presets: Preset[];
+  grain: Grain;
+  hideOut: boolean;
+}
+
+export interface Model {
+  inF: Set<string>;
+  outF: Set<string>;
+  inC: Set<string>;
+  outC: Set<string>;
+  inV: Set<string>;
+  outV: Set<string>;
+  reachF: Set<string>;
+  reachC: Set<string>;
+  reachV: Set<string>;
+  claimC: Set<string>;
+  claimV: Set<string>;
+  buildC: Set<string>;
+  buildV: Set<string>;
+  blocked: Set<string>;
+  conflicts: string[];
+}
+
+export interface BuildSlot {
+  key: string;
+  vec: string;
+  i: number;
+  t: VSlot['t'];
+  pos: string;
+  note: string;
+  arm: string;
+  prod: string;
+  product: string;
   label: string;
-  status: CheckStatus;
-  detail: string;
 }
 
-export interface QcResult {
-  status: CheckStatus;
-  checks: QcCheck[];
+export interface GaalInsert {
+  slot: string;
+  domain: string;
+  part: string;
 }
 
-/**
- * A registered format. Reusing the same format across projects reuses this
- * record rather than minting a new identifier.
- */
-export interface FormatRecord {
-  id: string;
-  name: string;
-  /** Shape + color signature across both arms; identical formats collide here. */
-  signature: string;
-  fc: 'homodimer' | 'heterodimer' | 'none';
-  symmetric: boolean;
-}
-
-/**
- * A molecule: the thing the loop actually makes. A format says what shape was
- * designed; a molecule says which registered chains were combined to build it,
- * so two projects that reach the same molecule share one identifier.
- */
-export interface MoleculeRecord {
-  id: string;
-  name: string;
-  formatId: string | null;
-  /** Registered chains it is built from, in arm order. */
-  regIds: string[];
-  targets: string[];
-  fc: 'homodimer' | 'heterodimer' | 'none';
-  /** Format signature plus the registered chain set; identical molecules collide. */
-  signature: string;
-  createdAt: number;
-}
-
-export interface Registry {
-  blocks: Record<string, BuildingBlock>;
-  vectors: Record<string, Vector>;
-  inserts: Record<string, Insert>;
-  constructs: Record<string, Construct>;
-  registered: Record<string, RegisteredChain>;
-  formats: Record<string, FormatRecord>;
-  molecules: Record<string, MoleculeRecord>;
+export interface GaalJob {
+  job: 'golden_gate_assembly';
+  library: 'GaaL';
+  backbone: string;
+  enzyme: string;
+  overhang5: string;
+  overhang3: string;
+  selection: string;
+  inserts: GaalInsert[];
+  product: string;
+  annotate: string[];
 }

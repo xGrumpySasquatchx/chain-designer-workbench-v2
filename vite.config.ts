@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 // Built assets are served from a repository subpath on GitHub Pages, so the
@@ -8,5 +9,5 @@ import react from '@vitejs/plugin-react'
 // bundle from the same prefix it was built with.
 export default defineConfig(({ mode }) => ({
   base: mode === 'production' ? '/chain-designer-workbench-v2/' : '/',
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
 }))
