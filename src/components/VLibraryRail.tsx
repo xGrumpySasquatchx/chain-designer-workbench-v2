@@ -37,10 +37,8 @@ export function VLibraryRail({
   const q = query.trim().toLowerCase();
   const shownPanels = panels.filter((p) => {
     if (!q) return true;
-    return [p.name, p.target, p.notes, p.origin, ...p.clones].join(' ').toLowerCase().includes(q);
+    return [p.name, p.target, p.notes, ...p.clones].join(' ').toLowerCase().includes(q);
   });
-  const fromGlyph = shownPanels.filter((p) => p.origin === 'bioglyph');
-  const fromLuma = shownPanels.filter((p) => p.origin === 'luma');
   const sizes = selected
     .map((id) => panels.find((p) => p.id === id)?.clones.length ?? 0)
     .filter((n) => n > 0);
@@ -122,14 +120,9 @@ export function VLibraryRail({
           </div>
         </div>
         {panelBlock(
-          'From BioGlyph',
-          'Panels already sent to Luma. Tick one or more; this bench builds them.',
-          fromGlyph,
-        )}
-        {panelBlock(
           'Registered in Luma',
-          'Sequences already in Luma. Combine with a BioGlyph panel to permute, or tick a custom set below.',
-          fromLuma,
+          'Tick one or more panels; combining them permutes their members. Or tick a custom set below.',
+          shownPanels,
         )}
         {selected.length ? (
           <div className="facet">
@@ -202,7 +195,7 @@ export function VLibraryRail({
             </>
           ) : (
             <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--ink-2)' }}>
-              Tick clones for a custom panel, or tick BioGlyph / Luma panels to permute them.
+              Tick clones for a custom panel, or tick Luma panels to permute them.
             </p>
           )}
           <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--ink-2)' }}>

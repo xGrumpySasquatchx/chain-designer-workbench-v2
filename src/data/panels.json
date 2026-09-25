@@ -2,7 +2,7 @@
   {
     "id": "PN-BG-CD3",
     "name": "TCE CD3 arm",
-    "origin": "bioglyph",
+    "origin": "luma",
     "target": "CD3\u03b5",
     "clones": [
       "aCD3-01",
@@ -36,7 +36,7 @@
       "aCD3-29",
       "aCD3-30"
     ],
-    "notes": "Sent from BioGlyph to Luma. 30 CD3 Fvs for the engager arm."
+    "notes": "30 CD3 Fvs for the engager arm, registered in Luma."
   },
   {
     "id": "PN-LU-CD20",
@@ -55,7 +55,7 @@
       "aCD20-09",
       "aCD20-10"
     ],
-    "notes": "Already registered in Luma. Pair with a BioGlyph panel to permute."
+    "notes": "Already registered in Luma. Combine with another panel to permute."
   },
   {
     "id": "PN-LU-TFR1",
@@ -72,12 +72,12 @@
   {
     "id": "PN-BG-HER2",
     "name": "HER2 pad export",
-    "origin": "bioglyph",
+    "origin": "luma",
     "target": "HER2",
     "clones": [
       "aHER2-tras"
     ],
-    "notes": "Single clone sent from the BioGlyph pad."
+    "notes": "Trastuzumab sequences registered in Luma."
   },
   {
     "id": "PN-LU-CD3-REG",

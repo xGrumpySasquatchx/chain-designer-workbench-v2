@@ -202,7 +202,7 @@ check(
 const cd3cd20 = applyPanels(catalog, panels, ['PN-BG-CD3', 'PN-LU-CD20'], []);
 check('30 CD3 × 10 CD20 is 300 builds', permuteCount([30, 10]) === 300);
 check(
-  'ticking the BioGlyph CD3 and Luma CD20 panels enumerates every pair',
+  'ticking the Luma CD3 and CD20 panels enumerates every pair',
   variantList(cd3cd20.variants).length === 300 &&
     cd3cd20.variants.includes('aCD3-01 × aCD20-01') &&
     cd3cd20.variants.includes('aCD3-30 × aCD20-10'),

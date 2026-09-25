@@ -143,7 +143,7 @@ export interface VRegion {
   notes: string;
 }
 
-export type PanelOrigin = 'bioglyph' | 'luma';
+export type PanelOrigin = 'luma';
 
 export interface VPanel {
   id: string;
