@@ -12,6 +12,7 @@ export function defaultState(): State {
     presets: [],
     grain: 'fmt',
     hideOut: false,
+    panels: [],
   };
 }
 
@@ -37,6 +38,7 @@ export function loadState(): State {
     if (Array.isArray(r.presets)) base.presets = r.presets;
     if (typeof r.hideOut === 'boolean') base.hideOut = r.hideOut;
     if (r.assign && typeof r.assign === 'object') base.assign = r.assign;
+    if (Array.isArray(r.panels)) base.panels = r.panels.filter((id) => typeof id === 'string');
   } catch {
     return defaultState();
   }

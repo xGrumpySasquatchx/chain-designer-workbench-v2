@@ -143,6 +143,17 @@ export interface VRegion {
   notes: string;
 }
 
+export type PanelOrigin = 'bioglyph' | 'luma';
+
+export interface VPanel {
+  id: string;
+  name: string;
+  origin: PanelOrigin;
+  target: string;
+  clones: string[];
+  notes: string;
+}
+
 export type Marks = Record<string, Mark>;
 
 export interface Sel {
@@ -166,6 +177,7 @@ export interface State {
   presets: Preset[];
   grain: Grain;
   hideOut: boolean;
+  panels: string[];
 }
 
 export interface Model {

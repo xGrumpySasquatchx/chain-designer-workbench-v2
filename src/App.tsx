@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import inventoryJson from './data/inventory.json';
 import mutationsJson from './data/mutations.json';
+import panelsJson from './data/panels.json';
 import seedJson from './data/seed.json';
 import vregionsJson from './data/vregions.json';
 import { BuildPanel } from './components/BuildPanel';
@@ -11,7 +12,7 @@ import { RowTable, type Col, type Row } from './components/RowTable';
 import { VariableRegions } from './components/VariableRegions';
 import { VLibraryRail } from './components/VLibraryRail';
 import { stockStatus } from './model/inventory';
-import { variantList } from './model/library';
+import { addToLibrary, applyPanels, clonesOf, parseLibrary, variantList } from './model/library';
 import { applyMutations } from './model/mutations';
 import { emptySel, resolve } from './model/selection';
 import { buildSlots } from './model/slots';
@@ -25,6 +26,7 @@ import type {
   Seed,
   Sel,
   Vector,
+  VPanel,
   VRegion,
 } from './model/types';
 import { defaultState, loadState, saveState } from './state/persist';
@@ -33,6 +35,7 @@ const seed = seedJson as unknown as Seed;
 const inventory = inventoryJson as InventoryBook;
 const mutations = mutationsJson as Mutation[];
 const catalog = vregionsJson as VRegion[];
+const panelBook = panelsJson as VPanel[];
 
 const FMT_FACETS: FacetDef[] = [
   { k: 'cls', h: 'Modality' },
@@ -329,8 +332,31 @@ export default function App() {
         {isVar ? (
           <VLibraryRail
             catalog={catalog}
+            panels={panelBook}
+            selected={state.panels}
             library={state.library}
             onLibrary={(library) => setState((s) => ({ ...s, library }))}
+            onPanels={(ids) =>
+              setState((s) => {
+                const applied = applyPanels(catalog, panelBook, ids, slots);
+                const panelNames = new Set(
+                  ids.flatMap((id) => {
+                    const p = panelBook.find((x) => x.id === id);
+                    return p ? clonesOf(catalog, p.clones).flatMap((c) => c.items.map((v) => v.name)) : [];
+                  }),
+                );
+                const extras = parseLibrary(s.library)
+                  .filter((e) => !panelNames.has(e.name))
+                  .map((e) => (e.t ? `${e.name}, ${e.t}` : e.name));
+                return {
+                  ...s,
+                  panels: ids,
+                  library: addToLibrary(applied.library, extras),
+                  variants: applied.variants,
+                  assign: applied.assign,
+                };
+              })
+            }
           />
         ) : (
           <FacetRail

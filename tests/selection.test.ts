@@ -2,17 +2,19 @@ import inventoryJson from '../src/data/inventory.json';
 import mutationsJson from '../src/data/mutations.json';
 import seedJson from '../src/data/seed.json';
 import vregionsJson from '../src/data/vregions.json';
-import { addToLibrary, filterCatalog } from '../src/model/library';
+import panelsJson from '../src/data/panels.json';
+import { addToLibrary, applyPanels, filterCatalog, permuteCount, removeFromLibrary, variantList, vregionText } from '../src/model/library';
 import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
 import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
 import { emptySel, resolve, sortedIds } from '../src/model/selection';
 import { slotsFor } from '../src/model/slots';
-import type { InventoryBook, Mutation, Seed, Sel, VRegion } from '../src/model/types';
+import type { InventoryBook, Mutation, Seed, Sel, VPanel, VRegion } from '../src/model/types';
 
 const seed = seedJson as unknown as Seed;
 const mutations = mutationsJson as Mutation[];
 const inventory = inventoryJson as InventoryBook;
 const catalog = vregionsJson as VRegion[];
+const panels = panelsJson as VPanel[];
 
 function modelOf(patch: (s: Sel) => void) {
   const s = selWith(patch);
@@ -187,6 +189,27 @@ check('unpaired filter keeps VHH and drops paired VH', unpaired.some((v) => v.t 
 check(
   'adding a pair is idempotent',
   addToLibrary(addToLibrary('', ['aTfR1-01-VH', 'aTfR1-01-VL']), ['aTfR1-01-VH']) === 'aTfR1-01-VH\naTfR1-01-VL\n',
+);
+check(
+  'unticking a clone drops it from the library',
+  removeFromLibrary('aTfR1-01-VH\naTfR1-01-VL\n', ['aTfR1-01-VH']) === 'aTfR1-01-VL, VL\n',
+);
+check(
+  'catalog search text does not carry a library source tag',
+  catalog.every((v) => !vregionText(v).includes('Geneious')),
+);
+
+const cd3cd20 = applyPanels(catalog, panels, ['PN-BG-CD3', 'PN-LU-CD20'], []);
+check('30 CD3 × 10 CD20 is 300 builds', permuteCount([30, 10]) === 300);
+check(
+  'ticking the BioGlyph CD3 and Luma CD20 panels enumerates every pair',
+  variantList(cd3cd20.variants).length === 300 &&
+    cd3cd20.variants.includes('aCD3-01 × aCD20-01') &&
+    cd3cd20.variants.includes('aCD3-30 × aCD20-10'),
+);
+check(
+  'panel apply loads both arms into the library',
+  cd3cd20.library.includes('aCD3-01-VH') && cd3cd20.library.includes('aCD20-10-VL'),
 );
 
 const open = resolve(seed, emptySel());

@@ -1,0 +1,106 @@
+[
+  {
+    "id": "PN-BG-CD3",
+    "name": "TCE CD3 arm",
+    "origin": "bioglyph",
+    "target": "CD3\u03b5",
+    "clones": [
+      "aCD3-01",
+      "aCD3-02",
+      "aCD3-03",
+      "aCD3-04",
+      "aCD3-05",
+      "aCD3-06",
+      "aCD3-07",
+      "aCD3-08",
+      "aCD3-09",
+      "aCD3-10",
+      "aCD3-11",
+      "aCD3-12",
+      "aCD3-13",
+      "aCD3-14",
+      "aCD3-15",
+      "aCD3-16",
+      "aCD3-17",
+      "aCD3-18",
+      "aCD3-19",
+      "aCD3-20",
+      "aCD3-21",
+      "aCD3-22",
+      "aCD3-23",
+      "aCD3-24",
+      "aCD3-25",
+      "aCD3-26",
+      "aCD3-27",
+      "aCD3-28",
+      "aCD3-29",
+      "aCD3-30"
+    ],
+    "notes": "Sent from BioGlyph to Luma. 30 CD3 Fvs for the engager arm."
+  },
+  {
+    "id": "PN-LU-CD20",
+    "name": "CD20 registered set",
+    "origin": "luma",
+    "target": "CD20",
+    "clones": [
+      "aCD20-01",
+      "aCD20-02",
+      "aCD20-03",
+      "aCD20-04",
+      "aCD20-05",
+      "aCD20-06",
+      "aCD20-07",
+      "aCD20-08",
+      "aCD20-09",
+      "aCD20-10"
+    ],
+    "notes": "Already registered in Luma. Pair with a BioGlyph panel to permute."
+  },
+  {
+    "id": "PN-LU-TFR1",
+    "name": "TfR1 campaign hits",
+    "origin": "luma",
+    "target": "TfR1",
+    "clones": [
+      "aTfR1-01",
+      "aTfR1-02",
+      "aTfR1-03"
+    ],
+    "notes": "Registered Luma sequences from the TfR1 campaign."
+  },
+  {
+    "id": "PN-BG-HER2",
+    "name": "HER2 pad export",
+    "origin": "bioglyph",
+    "target": "HER2",
+    "clones": [
+      "aHER2-tras"
+    ],
+    "notes": "Single clone sent from the BioGlyph pad."
+  },
+  {
+    "id": "PN-LU-CD3-REG",
+    "name": "CD3 registered parents",
+    "origin": "luma",
+    "target": "CD3\u03b5",
+    "clones": [
+      "CD3-huUCHT1",
+      "aCD3-VHH-02"
+    ],
+    "notes": "Named CD3 sequences already in Luma, including an unpaired VHH."
+  },
+  {
+    "id": "PN-LU-VHH",
+    "name": "Unpaired VHH set",
+    "origin": "luma",
+    "target": "mixed",
+    "clones": [
+      "aALB-VHH-09",
+      "aEGFR-VHH-04",
+      "aCD3-VHH-02",
+      "aTfR1-VHH-11"
+    ],
+    "notes": "Registered unpaired domains for Fc or VHH-only formats."
+  }
+]
