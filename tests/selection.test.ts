@@ -291,12 +291,28 @@ const twoPlasmidKih = matchingIds(
   '',
   (f) => f.id,
 );
-check('MsAb KiH Fc two-plasmid focus is the scFv-Fc heterodimer', [...twoPlasmidKih].join() === 'F-036');
-const two = resolve(seed, emptySel(), { formats: twoPlasmidKih });
 check(
-  'that focus offers both scFv-Fc arms as chain picks',
-  two.reachC.has('CH-31') && two.reachC.has('CH-32') && two.reachC.size === 2,
+  'MsAb KiH Fc two-plasmid focus includes scFv-Fc plus Fab, VHH, Cross Fab, mutein, and de novo',
+  ['F-036', 'F-047', 'F-048', 'F-049', 'F-050', 'F-051'].every((id) => twoPlasmidKih.has(id)) &&
+    twoPlasmidKih.size === 6,
+  [...twoPlasmidKih].sort().join(','),
+);
+const two = resolve(seed, emptySel(), { formats: twoPlasmidKih });
+const twoChainIds = ['CH-31', 'CH-32', 'CH-33', 'CH-34', 'CH-35', 'CH-36', 'CH-37', 'CH-38', 'CH-39', 'CH-40', 'CH-41', 'CH-42'];
+check(
+  'that focus offers scFv-Fc, Fab, VHH, Cross Fab, mutein, and de novo chain picks',
+  twoChainIds.every((id) => two.reachC.has(id)) && two.reachC.size === 12,
   [...two.reachC].sort().join(','),
+);
+const twoFams = new Set(seed.chains.filter((c) => two.reachC.has(c.id)).map((c) => c.fam));
+check(
+  'those chains are labeled as the requested building blocks',
+  twoFams.has('Fab') &&
+    twoFams.has('VHH') &&
+    twoFams.has('Cross Fab') &&
+    twoFams.has('Mutein') &&
+    twoFams.has('De novo') &&
+    seed.chains.some((c) => two.reachC.has(c.id) && c.name.includes('scFv-Fc')),
 );
 check(
   'that focus offers both scFv-Fc plasmids',
@@ -308,6 +324,20 @@ check(
   scfvFc.buildC.has('CH-31') && scfvFc.buildC.has('CH-32') && scfvFc.buildV.size === 2,
 );
 check('that format has V slots to assign', slotsFor(seed, 'F-036').length === 4, String(slotsFor(seed, 'F-036').length));
+for (const [fid, c1, c2, nSlots] of [
+  ['F-047', 'CH-33', 'CH-34', 4],
+  ['F-048', 'CH-35', 'CH-36', 2],
+  ['F-049', 'CH-37', 'CH-38', 4],
+  ['F-050', 'CH-39', 'CH-40', 2],
+  ['F-051', 'CH-41', 'CH-42', 2],
+] as const) {
+  const m = resolve(seed, selWith((s) => { s.fmt[fid] = 'in'; }));
+  check(
+    `including ${fid} claims both building-block arms`,
+    m.buildC.has(c1) && m.buildC.has(c2) && m.buildV.size === 2 && slotsFor(seed, fid).length === nSlots,
+    `chains ${[...m.buildC].join(',')} plasmids ${m.buildV.size} slots ${slotsFor(seed, fid).length}`,
+  );
+}
 
 const dart = resolve(seed, selWith((s) => { s.fmt['F-033'] = 'in'; }));
 check(

@@ -14,7 +14,11 @@ export function prodShort(v: Vector): string {
   const r = v.role || '';
   if (r.startsWith('Fd')) return 'Fd';
   if (r.startsWith('scFv-Fc')) return 'scFvFc';
+  if (r.startsWith('scFab-Fc')) return 'scFabFc';
+  if (r.startsWith('Cross Fab-Fc')) return 'xFabFc';
   if (r.startsWith('VHH-Fc')) return 'VHHFc';
+  if (r.startsWith('Mutein-Fc')) return 'muteinFc';
+  if (r.startsWith('De novo-Fc')) return 'denovoFc';
   if (r.startsWith('scFv')) return 'scFv';
   if (r.startsWith('Fc')) return 'Fc';
   if (v.fam === 'Light') return 'LC';

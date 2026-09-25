@@ -47,7 +47,17 @@ export interface Format {
 export interface Chain {
   id: string;
   name: string;
-  fam: 'Heavy' | 'Light' | 'Single chain' | 'Single-chain Fc' | 'Fc only';
+  fam:
+    | 'Heavy'
+    | 'Light'
+    | 'Single chain'
+    | 'Single-chain Fc'
+    | 'Fc only'
+    | 'Fab'
+    | 'VHH'
+    | 'Cross Fab'
+    | 'Mutein'
+    | 'De novo';
   half: string;
   cis: string;
   fvmode: string;
