@@ -106,7 +106,7 @@ export function RowTable({
     if (it.label !== lastGroup) {
       lastGroup = it.label;
       body.push(
-        <tr key={`g-${it.b}-${it.label}`} className={`grp ${it.b === 2 ? 'o' : it.b === 0 ? 'b' : ''}`}>
+        <tr key={`g-${it.b}-${it.label}-${body.length}`} className={`grp ${it.b === 2 ? 'o' : it.b === 0 ? 'b' : ''}`}>
           <td colSpan={ncol}>{it.label}</td>
         </tr>,
       );

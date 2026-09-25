@@ -59,7 +59,13 @@ export function FacetRail({
   fold?: ReactNode;
   grip?: ReactNode;
 }) {
+  const facetSig = facets.map((f) => f.k).join(',');
   const [open, setOpen] = useState<Set<string>>(() => new Set(facets.map((f) => f.k)));
+  const [prevSig, setPrevSig] = useState(facetSig);
+  if (prevSig !== facetSig) {
+    setPrevSig(facetSig);
+    setOpen(new Set(facets.map((f) => f.k)));
+  }
   const shown = (key: string) => open.has(key);
   const toggleOpen = (key: string) => {
     setOpen((prev) => {

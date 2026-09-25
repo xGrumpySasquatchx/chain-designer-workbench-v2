@@ -525,7 +525,6 @@ export default function App() {
           />
         ) : (
           <FacetRail
-            key={grain}
             title="Sources"
             facets={facets}
             rows={railRows}
