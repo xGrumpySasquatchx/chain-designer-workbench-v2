@@ -201,6 +201,7 @@ export interface Model {
   buildM: Set<string>;
   blocked: Set<string>;
   conflicts: string[];
+  focused: boolean;
 }
 
 export interface BuildSlot {

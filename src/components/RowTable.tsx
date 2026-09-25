@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Grain, Mark, Model } from '../model/types';
 
 export interface Col {
   h: string;
   cls?: string;
   cell: (row: Row) => ReactNode;
+  sort?: (row: Row) => string | number;
 }
 
 export interface Row {
@@ -37,6 +38,11 @@ function bucketOf(grain: Grain, id: string, mark: Mark | undefined, model: Model
   return { b: 2 as const, label: BUCKET_LABEL[2] };
 }
 
+function cmp(a: string | number, b: string | number): number {
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+}
+
 export function RowTable({
   grain,
   title,
@@ -64,6 +70,7 @@ export function RowTable({
   onMark: (id: string, v: Mark) => void;
   onHideOut: () => void;
 }) {
+  const [sort, setSort] = useState<{ h: string; dir: 1 | -1 } | null>(null);
   const q = String(query ?? '').trim().toLowerCase();
   const items = rows
     .filter((r) => {
@@ -77,7 +84,17 @@ export function RowTable({
       return true;
     })
     .map((r) => ({ r, ...bucketOf(grain, r.id, marks[r.id], model, String(r.tier ?? '')) }))
-    .sort((a, z) => a.b - z.b || (a.r.rank || 999) - (z.r.rank || 999) || a.r.id.localeCompare(z.r.id));
+    .sort((a, z) => {
+      if (a.b !== z.b) return a.b - z.b;
+      if (sort) {
+        const col = cols.find((c) => c.h === sort.h);
+        const av = col?.sort ? col.sort(a.r) : a.r.id;
+        const zv = col?.sort ? col.sort(z.r) : z.r.id;
+        const d = cmp(av, zv);
+        if (d) return d * sort.dir;
+      }
+      return (a.r.rank || 999) - (z.r.rank || 999) || a.r.id.localeCompare(z.r.id);
+    });
 
   const nOut = rows.filter((r) => bucketOf(grain, r.id, marks[r.id], model).b === 2).length;
   const ncol = cols.length + 2;
@@ -175,9 +192,28 @@ export function RowTable({
           <thead>
             <tr>
               <th style={{ width: 86 }}>In / out</th>
-              {cols.map((c) => (
-                <th key={c.h}>{c.h}</th>
-              ))}
+              {cols.map((c) => {
+                const active = sort?.h === c.h;
+                const aria = active ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none';
+                return (
+                  <th key={c.h} aria-sort={aria}>
+                    <button
+                      type="button"
+                      className="th-sort"
+                      onClick={() =>
+                        setSort((s) =>
+                          s?.h === c.h ? (s.dir === 1 ? { h: c.h, dir: -1 } : null) : { h: c.h, dir: 1 },
+                        )
+                      }
+                    >
+                      {c.h}
+                      <span className="th-dir" aria-hidden="true">
+                        {active ? (sort.dir === 1 ? '↑' : '↓') : ''}
+                      </span>
+                    </button>
+                  </th>
+                );
+              })}
               <th>Status</th>
             </tr>
           </thead>

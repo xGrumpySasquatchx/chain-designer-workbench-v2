@@ -14,7 +14,7 @@ import { VLibraryRail } from './components/VLibraryRail';
 import { stockStatus } from './model/inventory';
 import { addToLibrary, applyPanels, clonesOf, parseLibrary, variantList } from './model/library';
 import { applyMutations } from './model/mutations';
-import { emptySel, resolve } from './model/selection';
+import { emptySel, facetsActive, matchingIds, resolve } from './model/selection';
 import { buildSlots } from './model/slots';
 import type {
   Chain,
@@ -70,7 +70,7 @@ const CON_FACETS: FacetDef[] = [
 ];
 
 const FMT_COLS: Col[] = [
-  { h: 'ID', cls: 'idc', cell: (r) => String(r.id) },
+  { h: 'ID', cls: 'idc', cell: (r) => String(r.id), sort: (r) => String(r.id) },
   {
     h: 'Format',
     cell: (r) => (
@@ -79,6 +79,7 @@ const FMT_COLS: Col[] = [
         <span className="sm">{String(r.target)}</span>
       </>
     ),
+    sort: (r) => String(r.name),
   },
   {
     h: 'Fv content',
@@ -90,6 +91,7 @@ const FMT_COLS: Col[] = [
         </span>
       </>
     ),
+    sort: (r) => Number(r.full) * 10 + Number(r.half),
   },
   {
     h: 'Heterodimer',
@@ -101,8 +103,9 @@ const FMT_COLS: Col[] = [
       ) : (
         <span className="pill">Symmetric</span>
       ),
+    sort: (r) => (r.kih === 'Present' ? 'Knob-in-hole' : r.chg === 'Present' ? 'Charge-steered' : 'Symmetric'),
   },
-  { h: 'Plasmids', cell: (r) => <span className="mono">{String(r.plasmids)}</span> },
+  { h: 'Plasmids', cell: (r) => <span className="mono">{String(r.plasmids)}</span>, sort: (r) => Number(r.plasmids) },
   {
     h: 'Build load',
     cell: (r) => (
@@ -111,10 +114,11 @@ const FMT_COLS: Col[] = [
         <span className="sm">{String(r.drivers)}</span>
       </>
     ),
+    sort: (r) => Number(r.score),
   },
 ];
 const CHN_COLS: Col[] = [
-  { h: 'ID', cls: 'idc', cell: (r) => String(r.id) },
+  { h: 'ID', cls: 'idc', cell: (r) => String(r.id), sort: (r) => String(r.id) },
   {
     h: 'Chain',
     cell: (r) => (
@@ -123,6 +127,7 @@ const CHN_COLS: Col[] = [
         <span className="sm">{String(r.note)}</span>
       </>
     ),
+    sort: (r) => String(r.name),
   },
   {
     h: 'Fv contribution',
@@ -132,8 +137,9 @@ const CHN_COLS: Col[] = [
         <span className="sm">{String(r.slots)}</span>
       </>
     ),
+    sort: (r) => String(r.fvmode),
   },
-  { h: 'Pairs with', cell: (r) => String(r.partner) },
+  { h: 'Pairs with', cell: (r) => String(r.partner), sort: (r) => String(r.partner) },
   {
     h: 'Crossover',
     cell: (r) =>
@@ -142,15 +148,21 @@ const CHN_COLS: Col[] = [
       ) : (
         <span className="pill on">{String(r.crossover)}</span>
       ),
+    sort: (r) => String(r.crossover),
   },
-  { h: 'Vectors', cell: (r) => <span className="mono">{(r.vectors as string[]).length}</span> },
+  {
+    h: 'Vectors',
+    cell: (r) => <span className="mono">{(r.vectors as string[]).length}</span>,
+    sort: (r) => (r.vectors as string[]).length,
+  },
   {
     h: 'Inventory',
     cell: (r) => <InventoryCell record={inventory.chains[String(r.id)]} />,
+    sort: (r) => String(r.stock ?? ''),
   },
 ];
 const MUT_COLS: Col[] = [
-  { h: 'Set', cls: 'idc', cell: (r) => String(r.name) },
+  { h: 'Set', cls: 'idc', cell: (r) => String(r.name), sort: (r) => String(r.name) },
   {
     h: 'Purpose',
     cell: (r) => (
@@ -159,6 +171,7 @@ const MUT_COLS: Col[] = [
         <span className="sm">{String(r.domain)}</span>
       </>
     ),
+    sort: (r) => String(r.purpose),
   },
   {
     h: 'Positions',
@@ -168,8 +181,9 @@ const MUT_COLS: Col[] = [
         <span className="sm">{String(r.numbering)}</span>
       </>
     ),
+    sort: (r) => String(r.positions),
   },
-  { h: 'Partner', cell: (r) => String(r.partner) },
+  { h: 'Partner', cell: (r) => String(r.partner), sort: (r) => String(r.partner) },
   {
     h: 'Carried by',
     cell: (r) => (
@@ -180,14 +194,16 @@ const MUT_COLS: Col[] = [
         <span className="sm">{String(r.assay)}</span>
       </>
     ),
+    sort: (r) => String(r.carried),
   },
   {
     h: 'Notes',
     cell: (r) => <span className="sm" style={{ marginTop: 0 }}>{String(r.notes)}</span>,
+    sort: (r) => String(r.notes),
   },
 ];
 const CON_COLS: Col[] = [
-  { h: 'Vector', cls: 'idc', cell: (r) => String(r.id) },
+  { h: 'Vector', cls: 'idc', cell: (r) => String(r.id), sort: (r) => String(r.id) },
   {
     h: 'You supply',
     cell: (r) => (
@@ -196,6 +212,7 @@ const CON_COLS: Col[] = [
         <span className="sm">{String(r.module)}</span>
       </>
     ),
+    sort: (r) => String(r.insert),
   },
   {
     h: 'Engineering in the vector',
@@ -205,17 +222,20 @@ const CON_COLS: Col[] = [
         <span className="sm">{String(r.note)}</span>
       </>
     ),
+    sort: (r) => String(r.eng),
   },
   {
     h: 'Category',
     cell: (r) =>
       r.cat === 'None' ? <span className="pill">None</span> : <span className="pill on">{String(r.cat)}</span>,
+    sort: (r) => String(r.cat),
   },
-  { h: 'Marker', cell: (r) => String(r.sel) },
-  { h: 'Protein A', cell: (r) => String(r.prota) },
+  { h: 'Marker', cell: (r) => String(r.sel), sort: (r) => String(r.sel) },
+  { h: 'Protein A', cell: (r) => String(r.prota), sort: (r) => String(r.prota) },
   {
     h: 'Inventory',
     cell: (r) => <InventoryCell record={inventory.constructs[String(r.id)]} />,
+    sort: (r) => String(r.stock ?? ''),
   },
 ];
 
@@ -264,9 +284,22 @@ export default function App() {
     document.documentElement.style.setProperty('--grain-bg', `var(${bg})`);
   }, [state.grain]);
 
+  const fmtFocus = useMemo(() => {
+    if (!facetsActive(facetSel.fmt, query.fmt ?? '')) return undefined;
+    return matchingIds(seed.formats, facetSel.fmt, query.fmt ?? '', (f) =>
+      [f.id, f.name, f.target, f.mutset, f.notes, f.mispair, f.tier].join(' '),
+    );
+  }, [facetSel.fmt, query.fmt]);
+
   const model = useMemo(
-    () => applyMutations(resolve(seed, state.sel), seed, state.sel, mutations),
-    [state.sel],
+    () =>
+      applyMutations(
+        resolve(seed, state.sel, fmtFocus != null ? { formats: fmtFocus } : undefined),
+        seed,
+        state.sel,
+        mutations,
+      ),
+    [state.sel, fmtFocus],
   );
   const slots = useMemo(() => buildSlots(seed, model.buildV), [model.buildV]);
 
@@ -300,6 +333,14 @@ export default function App() {
         : grain === 'mut'
           ? 'Mutation sets'
           : 'Destination vectors';
+  const railRows =
+    grain === 'fmt'
+      ? rows
+      : grain === 'chn'
+        ? rows.filter((r) => model.reachC.has(r.id) || model.buildC.has(r.id))
+        : grain === 'mut'
+          ? rows.filter((r) => model.reachM.has(r.id) || model.buildM.has(r.id))
+          : rows.filter((r) => model.reachV.has(r.id) || model.buildV.has(r.id));
   const text = (r: Row) =>
     grain === 'fmt'
       ? [r.id, r.name, r.target, r.mutset, r.notes, r.mispair, r.tier].join(' ')
@@ -362,7 +403,7 @@ export default function App() {
           <FacetRail
             title="Narrow the list"
             facets={facets}
-            rows={rows}
+            rows={railRows}
             facetSel={facetSel[grain]}
             query={query[grain] ?? ''}
             onQuery={(q) => setQuery((qs) => ({ ...qs, [grain]: q }))}
@@ -399,6 +440,7 @@ export default function App() {
           />
         ) : (
           <RowTable
+            key={grain}
             grain={grain}
             title={title}
             rows={rows}

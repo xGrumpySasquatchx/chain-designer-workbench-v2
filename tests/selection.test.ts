@@ -218,4 +218,20 @@ check(
   mutations.every((m) => mutationRelevant(m, seed, open)),
 );
 
+const msabIds = new Set(seed.formats.filter((f) => f.cls === 'MsAb' || f.cls === 'ADC / MsAb').map((f) => f.id));
+const msab = resolve(seed, emptySel(), { formats: msabIds });
+check(
+  'MsAb focus does not offer a conventional heavy as a pick',
+  !msab.reachC.has('CH-01'),
+);
+check(
+  'MsAb focus keeps knob, hole, and common light chain in play',
+  msab.reachC.has('CH-02') && msab.reachC.has('CH-03') && msab.reachC.has('CH-20'),
+);
+const kihClc = resolve(seed, selWith((s) => { s.fmt['F-016'] = 'in'; }));
+check(
+  'KiH common-LC format claims knob and hole, not a stray mAb heavy',
+  kihClc.buildC.has('CH-02') && kihClc.buildC.has('CH-03') && !kihClc.reachC.has('CH-01'),
+);
+
 console.log('\nAll selection checks passed.');

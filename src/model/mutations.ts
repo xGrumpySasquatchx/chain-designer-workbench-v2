@@ -64,7 +64,7 @@ function formatMentions(mutation: Mutation, seed: Seed, model: Model): boolean {
 }
 
 export function mutationRelevant(mutation: Mutation, seed: Seed, model: Model): boolean {
-  if (!model.inF.size && !model.inC.size && !model.inV.size && !model.buildV.size) return true;
+  if (!model.inF.size && !model.inC.size && !model.inV.size && !model.buildV.size && !model.focused) return true;
   const vecs = carriedVectorIds(mutation, seed);
   if (vecs.some((v) => model.reachV.has(v) || model.buildV.has(v))) return true;
   if (formatMentions(mutation, seed, model)) return true;

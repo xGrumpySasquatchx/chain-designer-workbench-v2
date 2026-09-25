@@ -8,20 +8,49 @@ export function emptySel(): Sel {
   return { fmt: {}, chn: {}, con: {}, mut: {} };
 }
 
+export function facetsActive(facetSel: Record<string, Set<string>>, query: string): boolean {
+  if (String(query ?? '').trim()) return true;
+  return Object.values(facetSel).some((s) => s && s.size > 0);
+}
+
+export function matchingIds<T extends { id: string }>(
+  rows: T[],
+  facetSel: Record<string, Set<string>>,
+  query: string,
+  text: (row: T) => string,
+): Set<string> {
+  const q = String(query ?? '').trim().toLowerCase();
+  const keys = Object.keys(facetSel).filter((k) => facetSel[k]?.size);
+  return new Set(
+    rows
+      .filter((r) => {
+        const rec = r as Record<string, unknown>;
+        for (const k of keys) {
+          if (!facetSel[k]!.has(String(rec[k] ?? ''))) return false;
+        }
+        if (q && !text(r).toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .map((r) => r.id),
+  );
+}
+
 /** Pure cascade over `sel` and the seed. Including something never hides its siblings. */
-export function resolve(seed: Seed, sel: Sel): Model {
+export function resolve(seed: Seed, sel: Sel, focus?: { formats?: Set<string> }): Model {
   const inF = marked(sel.fmt, 'in');
   const outF = marked(sel.fmt, 'out');
   const inC = marked(sel.chn, 'in');
   const outC = marked(sel.chn, 'out');
   const inV = marked(sel.con, 'in');
   const outV = marked(sel.con, 'out');
+  const focused = focus?.formats != null;
 
   const byChain = Object.fromEntries(seed.chains.map((c) => [c.id, c]));
   const byVec = Object.fromEntries(seed.vectors.map((v) => [v.id, v]));
 
   let pf = seed.formats.filter((f) => !outF.has(f.id));
   if (inF.size) pf = pf.filter((f) => inF.has(f.id));
+  else if (focused) pf = pf.filter((f) => focus!.formats!.has(f.id));
 
   const chainPool = new Set<string>();
   pf.forEach((f) => f.chains.forEach((c) => chainPool.add(c)));
@@ -116,6 +145,7 @@ export function resolve(seed: Seed, sel: Sel): Model {
     buildM: new Set(),
     blocked,
     conflicts,
+    focused,
   };
 }
 
