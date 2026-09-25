@@ -43,8 +43,10 @@ export function LevelTabs({
           title={`${s.name} · ${counts[s.g]}`}
           onClick={() => onGrain(s.g)}
         >
-          <span className="tool-lvl">{s.lvl}</span>
-          <span className="tool-nm">{s.name}</span>
+          <span className="tool-head">
+            <span className="tool-lvl">{s.lvl}</span>
+            <span className="tool-nm">{s.name}</span>
+          </span>
           <span className="tool-ct">{counts[s.g]}</span>
         </button>
       ))}

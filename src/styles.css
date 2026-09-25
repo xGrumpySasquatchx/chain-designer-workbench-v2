@@ -44,17 +44,21 @@ body{margin:0; background:var(--paper); color:var(--ink);
 #root{position:fixed; inset:0; display:flex; flex-direction:column; overflow:hidden}
 .mono,code{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
 
-.toolbar{flex:none; z-index:30; display:flex; align-items:center; gap:8px;
-  background:var(--tool); border-bottom:1px solid var(--rule); padding:3px 8px 3px 10px; min-height:44px}
+.toolbar{flex:none; z-index:30; display:flex; align-items:center; gap:10px;
+  background:var(--tool); border-bottom:1px solid var(--rule); padding:6px 10px; min-height:64px}
 .tool-brand{font-size:13px; font-weight:600; letter-spacing:-0.01em; white-space:nowrap; flex:none}
-.tool-tabs{display:flex; align-items:stretch; gap:2px; flex:1 1 auto; min-width:0; overflow-x:auto}
-.tool{appearance:none; border:0; background:transparent; color:var(--ink-2); cursor:pointer;
-  padding:4px 10px 5px; font:inherit; text-align:left; border-radius:3px; min-width:0}
+.tool-tabs{display:flex; align-items:stretch; gap:6px; flex:1 1 auto; min-width:0; overflow-x:auto}
+.tool{appearance:none; border:1px solid transparent; background:transparent; color:var(--ink-2); cursor:pointer;
+  display:flex; flex-direction:column; justify-content:center; gap:3px;
+  padding:8px 14px 9px; font:inherit; text-align:left; border-radius:4px; min-width:132px; flex:1 1 0}
 .tool:hover{background:var(--card)}
-.tool .tool-lvl{font-size:10px; color:var(--ink-3); display:block; line-height:1.1}
-.tool .tool-nm{font-size:12.5px; font-weight:600; color:var(--ink); display:block; white-space:nowrap}
-.tool .tool-ct{font-size:11px; color:var(--ink-3); font-family:"IBM Plex Mono",monospace; display:block}
-.tool[aria-selected="true"]{background:var(--card); box-shadow:inset 0 -2px 0 var(--sc)}
+.tool-head{display:flex; align-items:center; gap:8px; min-width:0}
+.tool .tool-lvl{flex:none; display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px; border-radius:4px; font-size:13px; font-weight:700; line-height:1;
+  background:var(--sc); color:#fff}
+.tool .tool-nm{font-size:16px; font-weight:600; color:var(--ink); line-height:1.2; white-space:nowrap}
+.tool .tool-ct{font-size:12px; color:var(--ink-3); font-family:"IBM Plex Mono",monospace; padding-left:30px}
+.tool[aria-selected="true"]{background:var(--card); border-color:var(--rule); box-shadow:inset 0 -3px 0 var(--sc)}
 .tool:focus-visible{outline:2px solid var(--grain); outline-offset:-2px}
 .tool[data-g="fmt"]{--sc:var(--fmt)} .tool[data-g="chn"]{--sc:var(--chn)} .tool[data-g="var"]{--sc:var(--vr)} .tool[data-g="mut"]{--sc:var(--mut)} .tool[data-g="con"]{--sc:var(--con)}
 .tool-filter{flex:0 1 220px; min-width:120px; padding:5px 8px; border:1px solid var(--rule); border-radius:3px;
