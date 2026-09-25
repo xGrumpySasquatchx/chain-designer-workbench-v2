@@ -3,7 +3,7 @@ import mutationsJson from '../src/data/mutations.json';
 import seedJson from '../src/data/seed.json';
 import vregionsJson from '../src/data/vregions.json';
 import panelsJson from '../src/data/panels.json';
-import { addToLibrary, applyPanels, filterCatalog, permuteCount, removeFromLibrary, variantList, vregionText } from '../src/model/library';
+import { addToLibrary, applyClones, applyPanels, filterCatalog, permuteCount, removeFromLibrary, variantList, vregionText } from '../src/model/library';
 import { compileSearch, panelMatches, searchCatalog, treeCatalog } from '../src/model/vsearch';
 import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
 import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
@@ -255,6 +255,38 @@ check(
 check(
   'panel apply loads both arms into the library',
   cd3cd20.library.includes('aCD3-01-VH') && cd3cd20.library.includes('aCD20-10-VL'),
+);
+
+const mabSlots = slotsFor(seed, 'F-001');
+const mabVh = mabSlots.find((s) => s.t === 'VH');
+const mabVl = mabSlots.find((s) => s.t === 'VL');
+const pd1Pair = catalog.filter((v) => v.clone === 'aPD1-01');
+const pd1On = applyClones(pd1Pair, mabSlots, '', '', {}, true);
+check(
+  'ticking paired PD-1 on a mAb names the build',
+  pd1On.variants.includes('aPD1-01') && pd1On.library.includes('aPD1-01-VH') && pd1On.library.includes('aPD1-01-VL'),
+);
+check(
+  'that PD-1 pair fills the mAb VH and VL slots',
+  !!mabVh &&
+    !!mabVl &&
+    pd1On.assign['aPD1-01']?.[mabVh.key] === 'aPD1-01-VH' &&
+    pd1On.assign['aPD1-01']?.[mabVl.key] === 'aPD1-01-VL',
+  JSON.stringify(pd1On.assign['aPD1-01']),
+);
+const pd1Off = applyClones(pd1Pair, mabSlots, pd1On.library, pd1On.variants, pd1On.assign, false);
+check(
+  'unticking PD-1 drops it from the build',
+  !pd1Off.library.includes('aPD1-01') && pd1Off.variants === '' && !pd1Off.assign['aPD1-01'],
+);
+const pd1Panel = applyPanels(catalog, panels, ['PN-LU-PD1'], mabSlots);
+check(
+  'the PD-1 Luma panel assigns the pair onto a mAb',
+  variantList(pd1Panel.variants).join() === 'aPD1-01' &&
+    !!mabVh &&
+    !!mabVl &&
+    pd1Panel.assign['aPD1-01']?.[mabVh.key] === 'aPD1-01-VH' &&
+    pd1Panel.assign['aPD1-01']?.[mabVl.key] === 'aPD1-01-VL',
 );
 
 const open = resolve(seed, emptySel());

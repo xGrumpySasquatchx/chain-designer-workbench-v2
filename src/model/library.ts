@@ -93,6 +93,84 @@ export function applyPanels(
   return { library, variants: variants.join('\n') + '\n', assign };
 }
 
+function fillCloneSlots(
+  items: VRegion[],
+  slots: BuildSlot[],
+  existing?: Record<string, string>,
+): Record<string, string> {
+  const row = { ...(existing ?? {}) };
+  slots.forEach((s) => {
+    if (row[s.key]) return;
+    const hit = items.find((v) => v.t === s.t);
+    if (hit) row[s.key] = hit.name;
+  });
+  return row;
+}
+
+export function applyClones(
+  items: VRegion[],
+  slots: BuildSlot[],
+  library: string,
+  variants: string,
+  assign: Record<string, Record<string, string>>,
+  on: boolean,
+): { library: string; variants: string; assign: Record<string, Record<string, string>> } {
+  const nextLib = on ? addToLibrary(library, items.map(taggedName)) : removeFromLibrary(library, items.map(taggedName));
+  const list = variantList(variants);
+  const nextAssign = { ...assign };
+  const nextList = [...list];
+  groupCatalog(items).forEach((g) => {
+    if (on) {
+      if (!nextList.includes(g.clone)) nextList.push(g.clone);
+      nextAssign[g.clone] = fillCloneSlots(g.items, slots, nextAssign[g.clone]);
+    } else {
+      const i = nextList.indexOf(g.clone);
+      if (i >= 0) nextList.splice(i, 1);
+      delete nextAssign[g.clone];
+    }
+  });
+  return {
+    library: nextLib,
+    variants: nextList.length ? `${nextList.join('\n')}\n` : '',
+    assign: nextAssign,
+  };
+}
+
+export function mergeStandaloneBuilds(panelVariants: string, prevVariants: string, library: string): string {
+  const panel = variantList(panelVariants);
+  const have = libraryNames(library);
+  const keep = variantList(prevVariants).filter((v) => {
+    if (v.includes(' × ') || panel.includes(v)) return false;
+    return [...have].some((name) => name === v || name.startsWith(`${v}-`));
+  });
+  const all = [...panel, ...keep];
+  return all.length ? `${all.join('\n')}\n` : '';
+}
+
+export function fillAssignFromCatalog(
+  catalog: VRegion[],
+  variants: string,
+  slots: BuildSlot[],
+  assign: Record<string, Record<string, string>>,
+): Record<string, Record<string, string>> {
+  if (!slots.length) return assign;
+  let changed = false;
+  const next = { ...assign };
+  variantList(variants).forEach((vr) => {
+    if (vr.includes(' × ')) return;
+    const items = catalog.filter((v) => v.clone === vr);
+    if (!items.length) return;
+    const filled = fillCloneSlots(items, slots, next[vr]);
+    const prev = next[vr] ?? {};
+    const keys = Object.keys(filled);
+    if (keys.length !== Object.keys(prev).length || keys.some((k) => filled[k] !== prev[k])) {
+      next[vr] = filled;
+      changed = true;
+    }
+  });
+  return changed ? next : assign;
+}
+
 export function filterCatalog(
   catalog: VRegion[],
   query: string,

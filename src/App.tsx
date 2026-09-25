@@ -13,7 +13,16 @@ import { FoldBtn, ResizeGrip, useSidePanels } from './components/SidePanels';
 import { VariableRegions } from './components/VariableRegions';
 import { VLibraryRail } from './components/VLibraryRail';
 import { stockStatus } from './model/inventory';
-import { addToLibrary, applyPanels, clonesOf, parseLibrary, variantList } from './model/library';
+import {
+  addToLibrary,
+  applyClones,
+  applyPanels,
+  clonesOf,
+  fillAssignFromCatalog,
+  mergeStandaloneBuilds,
+  parseLibrary,
+  variantList,
+} from './model/library';
 import { applyMutations } from './model/mutations';
 import { emptySel, facetsActive, matchingIds, resolve } from './model/selection';
 import { buildSlots } from './model/slots';
@@ -328,6 +337,13 @@ export default function App() {
     [state.sel, fmtFocus],
   );
   const slots = useMemo(() => buildSlots(seed, model.buildV), [model.buildV]);
+  const slotSig = [...model.buildV].sort().join(',');
+  useEffect(() => {
+    setState((s) => {
+      const assign = fillAssignFromCatalog(catalog, s.variants, slots, s.assign);
+      return assign === s.assign ? s : { ...s, assign };
+    });
+  }, [slotSig, slots]);
 
   const setMark = (grain: 'fmt' | 'chn' | 'con' | 'mut', id: string, v: Mark) => {
     setState((s) => {
@@ -446,6 +462,12 @@ export default function App() {
               />
             }
             onLibrary={(library) => setState((s) => ({ ...s, library }))}
+            onClones={(items, on) =>
+              setState((s) => ({
+                ...s,
+                ...applyClones(items, slots, s.library, s.variants, s.assign, on),
+              }))
+            }
             onPanels={(ids) =>
               setState((s) => {
                 const applied = applyPanels(catalog, panelBook, ids, slots);
@@ -458,12 +480,13 @@ export default function App() {
                 const extras = parseLibrary(s.library)
                   .filter((e) => !panelNames.has(e.name))
                   .map((e) => (e.t ? `${e.name}, ${e.t}` : e.name));
+                const library = addToLibrary(applied.library, extras);
                 return {
                   ...s,
                   panels: ids,
-                  library: addToLibrary(applied.library, extras),
-                  variants: applied.variants,
-                  assign: applied.assign,
+                  library,
+                  variants: mergeStandaloneBuilds(applied.variants, s.variants, library),
+                  assign: { ...s.assign, ...applied.assign },
                 };
               })
             }

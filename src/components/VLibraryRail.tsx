@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  addToLibrary,
   libraryNames,
   parseLibrary,
   permuteCount,
-  removeFromLibrary,
-  taggedName,
 } from '../model/library';
 import type { VPanel, VRegion } from '../model/types';
 import {
@@ -27,6 +24,7 @@ export function VLibraryRail({
   selected,
   library,
   onLibrary,
+  onClones,
   onPanels,
   expanded = true,
   onFold,
@@ -38,6 +36,7 @@ export function VLibraryRail({
   selected: string[];
   library: string;
   onLibrary: (text: string) => void;
+  onClones: (items: VRegion[], on: boolean) => void;
   onPanels: (ids: string[]) => void;
   expanded?: boolean;
   onFold?: () => void;
@@ -90,8 +89,7 @@ export function VLibraryRail({
   const shown = (key: string) => searching || open.has(key);
 
   const toggleClone = (items: VRegion[], on: boolean) => {
-    const names = items.map(taggedName);
-    onLibrary(on ? addToLibrary(library, names) : removeFromLibrary(library, names));
+    onClones(items, on);
   };
   const toggleGroups = (groups: CloneGroup[], on: boolean) => {
     toggleClone(

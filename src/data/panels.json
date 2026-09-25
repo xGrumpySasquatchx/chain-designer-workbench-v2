@@ -88,6 +88,18 @@
     "notes": "Trastuzumab sequences registered in Luma."
   },
   {
+    "id": "PN-LU-PD1",
+    "name": "PD-1 campaign hits",
+    "origin": "luma",
+    "target": "PD-1",
+    "project": "PD-1 campaign",
+    "date": "2024-06-04",
+    "clones": [
+      "aPD1-01"
+    ],
+    "notes": "Paired PD-1 Fv registered in Luma. Tick it on a mAb to fill VH and VL."
+  },
+  {
     "id": "PN-LU-CD3-REG",
     "name": "CD3 registered parents",
     "origin": "luma",
