@@ -105,7 +105,7 @@ export function RowTable({
     if (it.label !== lastGroup) {
       lastGroup = it.label;
       body.push(
-        <tr key={`g-${it.label}`} className={`grp ${it.b === 2 ? 'o' : it.b === 0 ? 'b' : ''}`}>
+        <tr key={`g-${it.b}-${it.label}`} className={`grp ${it.b === 2 ? 'o' : it.b === 0 ? 'b' : ''}`}>
           <td colSpan={ncol}>{it.label}</td>
         </tr>,
       );
@@ -175,10 +175,17 @@ export function RowTable({
 
   return (
     <main className="panel list">
+      <div className="pathbar" aria-label="Folder path">
+        <span>Local</span>
+        <span className="path-sep" aria-hidden="true">
+          ▸
+        </span>
+        <span>{title}</span>
+      </div>
       <div className="panel-h">
         <h2>{title}</h2>
         <span className="count">
-          {nOut ? `${rows.length - nOut} available, ${nOut} ruled out` : `${rows.length} options`}
+          {nOut ? `${rows.length - nOut} available, ${nOut} ruled out` : `${rows.length} documents`}
         </span>
         <span className="flex-1" />
         {nOut > 0 && (

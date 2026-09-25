@@ -2,11 +2,11 @@ import { buildSlots } from '../model/slots';
 import type { Grain, Model, Seed } from '../model/types';
 
 const STEPS: { g: Grain; lvl: string; name: string }[] = [
-  { g: 'fmt', lvl: 'Level 1', name: 'Format' },
-  { g: 'chn', lvl: 'Level 2', name: 'Chain' },
-  { g: 'var', lvl: 'Level 3', name: 'Variable regions' },
-  { g: 'mut', lvl: 'Level 4', name: 'Mutations' },
-  { g: 'con', lvl: 'Level 5', name: 'Construct' },
+  { g: 'fmt', lvl: '1', name: 'Format' },
+  { g: 'chn', lvl: '2', name: 'Chain' },
+  { g: 'var', lvl: '3', name: 'Variable regions' },
+  { g: 'mut', lvl: '4', name: 'Mutations' },
+  { g: 'con', lvl: '5', name: 'Construct' },
 ];
 
 export function LevelTabs({
@@ -23,29 +23,29 @@ export function LevelTabs({
   onGrain: (g: Grain) => void;
 }) {
   const slots = buildSlots(seed, model.buildV).length;
-  const n = builds || 1;
   const counts: Record<Grain, string> = {
-    fmt: `${model.reachF.size} of ${seed.formats.length} in play`,
-    chn: `${model.buildC.size} in build, ${model.reachC.size} available`,
-    var: `${slots} slot${slots === 1 ? '' : 's'}, ${n} build${n === 1 ? '' : 's'}`,
-    mut: `${model.buildM.size} in build, ${model.reachM.size} available`,
-    con: `${model.buildV.size} in build, ${model.reachV.size} available`,
+    fmt: `${model.reachF.size} of ${seed.formats.length}`,
+    chn: `${model.buildC.size} / ${model.reachC.size}`,
+    var: `${slots} slot${slots === 1 ? '' : 's'}${builds ? ` · ${builds}` : ''}`,
+    mut: `${model.buildM.size} / ${model.reachM.size}`,
+    con: `${model.buildV.size} / ${model.reachV.size}`,
   };
 
   return (
-    <div className="cascade" role="tablist" aria-label="Level">
+    <div className="tool-tabs" role="tablist" aria-label="Level">
       {STEPS.map((s) => (
         <button
           key={s.g}
-          className="step"
+          className="tool"
           data-g={s.g}
           role="tab"
           aria-selected={grain === s.g}
+          title={`${s.name} · ${counts[s.g]}`}
           onClick={() => onGrain(s.g)}
         >
-          <span className="lvl">{s.lvl}</span>
-          <span className="nm">{s.name}</span>
-          <span className="ct">{counts[s.g]}</span>
+          <span className="tool-lvl">{s.lvl}</span>
+          <span className="tool-nm">{s.name}</span>
+          <span className="tool-ct">{counts[s.g]}</span>
         </button>
       ))}
     </div>

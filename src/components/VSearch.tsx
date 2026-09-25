@@ -44,7 +44,7 @@ export function VSearch({
   return (
     <div className="facet">
       <label className="vsearch-lab" htmlFor={box}>
-        Search clones or panels
+        Search
       </label>
       <input
         id={box}

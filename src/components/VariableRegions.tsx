@@ -19,6 +19,13 @@ export function VariableRegions({
   if (!slots.length) {
     return (
       <main className="panel list">
+        <div className="pathbar" aria-label="Folder path">
+          <span>Local</span>
+          <span className="path-sep" aria-hidden="true">
+            ▸
+          </span>
+          <span>Variable regions</span>
+        </div>
         <div className="panel-h">
           <h2>Variable regions</h2>
           <span className="count">0 slots</span>
@@ -36,6 +43,13 @@ export function VariableRegions({
 
   return (
     <main className="panel list">
+      <div className="pathbar" aria-label="Folder path">
+        <span>Local</span>
+        <span className="path-sep" aria-hidden="true">
+          ▸
+        </span>
+        <span>Variable regions</span>
+      </div>
       <div className="panel-h">
         <h2>Variable regions</h2>
         <span className="count">{slots.length} slots</span>

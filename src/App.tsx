@@ -9,6 +9,7 @@ import { FacetRail, type FacetDef } from './components/FacetRail';
 import { InventoryCell } from './components/InventoryCell';
 import { LevelTabs } from './components/LevelTabs';
 import { RowTable, type Col, type Row } from './components/RowTable';
+import { FoldBtn, ResizeGrip, useSidePanels } from './components/SidePanels';
 import { VariableRegions } from './components/VariableRegions';
 import { VLibraryRail } from './components/VLibraryRail';
 import { stockStatus } from './model/inventory';
@@ -252,6 +253,20 @@ function withStock<T extends { id: string }>(rows: T[], book: InventoryBook['cha
   return rows.map((r) => ({ ...r, stock: stockStatus(book[r.id]) })) as unknown as Row[];
 }
 
+function cycleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute(
+    'data-theme',
+    cur === 'dark'
+      ? 'light'
+      : cur === 'light'
+        ? 'dark'
+        : matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'light'
+          : 'dark',
+  );
+}
+
 function pruneFacetSel(facetSel: Record<string, Set<string>>, rows: Row[]): Record<string, Set<string>> {
   const next: Record<string, Set<string>> = {};
   for (const [k, set] of Object.entries(facetSel)) {
@@ -263,6 +278,7 @@ function pruneFacetSel(facetSel: Record<string, Set<string>>, rows: Row[]): Reco
 }
 
 export default function App() {
+  const sides = useSidePanels();
   const [state, setState] = useState(defaultState);
   const [query, setQuery] = useState<Record<Grain, string>>({
     fmt: '',
@@ -363,30 +379,72 @@ export default function App() {
 
   return (
     <>
-      <header>
-        <div className="head-in">
-          <h1>Protein Chain Workbench</h1>
-          <p className="sub">
-            Pick a format and its chains and plasmids come with it. Add or drop individual ones without
-            disturbing the rest. Anything ruled out sinks to the bottom.
-          </p>
-          <LevelTabs
-            grain={grain}
-            model={model}
-            seed={seed}
-            builds={variantList(state.variants).length}
-            onGrain={(g) => setState((s) => ({ ...s, grain: g }))}
-          />
+      <header className="toolbar">
+        <div className="tool-brand" title="Pick a format and its chains and plasmids come with it.">
+          Protein Chain Workbench
         </div>
+        <LevelTabs
+          grain={grain}
+          model={model}
+          seed={seed}
+          builds={variantList(state.variants).length}
+          onGrain={(g) => setState((s) => ({ ...s, grain: g }))}
+        />
+        {isVar ? null : (
+          <input
+            className="tool-filter"
+            type="search"
+            placeholder="Filter documents"
+            aria-label="Filter documents"
+            value={query[grain] ?? ''}
+            onChange={(e) => setQuery((qs) => ({ ...qs, [grain]: e.target.value }))}
+          />
+        )}
+        <button
+          className="btn sm"
+          type="button"
+          title="Hide Sources and Viewer so the document table fills the window."
+          onClick={sides.expandView}
+        >
+          {sides.layout.leftOpen || sides.layout.rightOpen ? 'Expand View' : 'Restore View'}
+        </button>
+        <button className="btn sm" type="button" onClick={cycleTheme}>
+          Theme
+        </button>
       </header>
+      <div className="statusbar" role="status">
+        <span>
+          {grain === 'fmt'
+            ? `${model.reachF.size} of ${seed.formats.length} documents in play`
+            : grain === 'chn'
+              ? `${model.buildC.size} in build, ${model.reachC.size} available`
+              : grain === 'var'
+                ? `${slots.length} slots, ${variantList(state.variants).length || 1} builds`
+                : grain === 'mut'
+                  ? `${model.buildM.size} in build, ${model.reachM.size} available`
+                  : `${model.buildV.size} in build, ${model.reachV.size} available`}
+        </span>
+        <span className="stat-grow" />
+        <span>EU for Fc and CH1 · Kabat for V domains · selections stay in this browser</span>
+      </div>
 
-      <div className="wrap">
+      <div className="wrap" style={sides.wrapStyle}>
         {isVar ? (
           <VLibraryRail
             catalog={catalog}
             panels={panelBook}
             selected={state.panels}
             library={state.library}
+            expanded={sides.layout.leftOpen}
+            onFold={() => sides.toggle('left')}
+            fold={<FoldBtn side="left" open={sides.layout.leftOpen} onClick={() => sides.toggle('left')} />}
+            grip={
+              <ResizeGrip
+                side="left"
+                onDrag={(e) => sides.startResize('left', e)}
+                onReset={() => sides.resetWidth('left')}
+              />
+            }
             onLibrary={(library) => setState((s) => ({ ...s, library }))}
             onPanels={(ids) =>
               setState((s) => {
@@ -412,12 +470,20 @@ export default function App() {
           />
         ) : (
           <FacetRail
-            title="Narrow the list"
+            title="Sources"
             facets={facets}
             rows={railRows}
             facetSel={liveFacets}
-            query={query[grain] ?? ''}
-            onQuery={(q) => setQuery((qs) => ({ ...qs, [grain]: q }))}
+            expanded={sides.layout.leftOpen}
+            onFold={() => sides.toggle('left')}
+            fold={<FoldBtn side="left" open={sides.layout.leftOpen} onClick={() => sides.toggle('left')} />}
+            grip={
+              <ResizeGrip
+                side="left"
+                onDrag={(e) => sides.startResize('left', e)}
+                onReset={() => sides.resetWidth('left')}
+              />
+            }
             onToggle={(key, value, on) => {
               setFacetSel((fs) => {
                 const cur = new Set(fs[grain][key] ?? []);
@@ -428,7 +494,6 @@ export default function App() {
             }}
             onClear={() => {
               setFacetSel((fs) => ({ ...fs, [grain]: {} }));
-              setQuery((qs) => ({ ...qs, [grain]: '' }));
             }}
           />
         )}
@@ -476,6 +541,16 @@ export default function App() {
           variants={state.variants}
           assign={state.assign}
           presets={state.presets}
+          expanded={sides.layout.rightOpen}
+          onFold={() => sides.toggle('right')}
+          fold={<FoldBtn side="right" open={sides.layout.rightOpen} onClick={() => sides.toggle('right')} />}
+          grip={
+            <ResizeGrip
+              side="right"
+              onDrag={(e) => sides.startResize('right', e)}
+              onReset={() => sides.resetWidth('right')}
+            />
+          }
           onReset={() => setState((s) => ({ ...s, sel: emptySel() }))}
           onRuleOut={(id) => setMark('con', id, 'out')}
           onRestore={(g, id) =>
@@ -503,11 +578,6 @@ export default function App() {
           }
         />
       </div>
-      <p className="foot">
-        Vector IDs are placeholders until mapped onto your plasmid registry. Positions are EU for Fc and
-        CH1, Kabat for V domains and flagged CL positions. Selections and saved backbones live in this
-        browser.
-      </p>
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   addToLibrary,
   libraryNames,
@@ -28,6 +28,10 @@ export function VLibraryRail({
   library,
   onLibrary,
   onPanels,
+  expanded = true,
+  onFold,
+  fold,
+  grip,
 }: {
   catalog: VRegion[];
   panels: VPanel[];
@@ -35,12 +39,16 @@ export function VLibraryRail({
   library: string;
   onLibrary: (text: string) => void;
   onPanels: (ids: string[]) => void;
+  expanded?: boolean;
+  onFold?: () => void;
+  fold?: ReactNode;
+  grip?: ReactNode;
 }) {
   const [query, setQuery] = useState('');
   const [advanced, setAdvanced] = useState(false);
   const [match, setMatch] = useState<'all' | 'any'>('all');
   const [terms, setTerms] = useState<SearchTerm[]>([blankTerm()]);
-  const [open, setOpen] = useState<Set<string>>(() => new Set(['paired', 'unpaired']));
+  const [open, setOpen] = useState<Set<string>>(() => new Set(['paired', 'unpaired', 'luma', 'paste']));
   const [pasteOpen, setPasteOpen] = useState(false);
   const lib = parseLibrary(library);
   const have = libraryNames(library);
@@ -96,10 +104,13 @@ export function VLibraryRail({
   };
 
   return (
-    <aside className="panel rail" aria-label="V region library">
-      <div className="panel-h">
-        <h2>V region library</h2>
-        <span className="count">{lib.length ? `${lib.length} in build` : 'empty'}</span>
+    <aside className={`panel rail${expanded ? '' : ' is-folded'}`} aria-label="Sources">
+      <div className="panel-h" onClick={expanded ? undefined : onFold}>
+        <h2>Sources</h2>
+        <div className="panel-h-act">
+          <span className="count">{lib.length ? `${lib.length} in build` : 'empty'}</span>
+          {fold}
+        </div>
       </div>
       <div className="rail-body">
         <VSearch
@@ -115,28 +126,37 @@ export function VLibraryRail({
           projects={projects}
         />
         {shownPanels.length ? (
-          <div className="facet">
-            <h3>Registered in Luma</h3>
-            <p className="empty" style={{ margin: '0 0 8px' }}>
-              Tick one or more panels; combining them permutes their members. Or tick a custom set
-              below.
-            </p>
-            {shownPanels.map((p) => (
-              <label className="opt" key={p.id}>
-                <input
-                  type="checkbox"
-                  checked={picked.has(p.id)}
-                  onChange={(e) => togglePanel(p.id, e.target.checked)}
-                />
-                <span>
-                  {p.name}
-                  <span className="sm">
-                    {p.id} · {p.project} · {p.date}
-                  </span>
-                </span>
-                <span className="n">{p.clones.length}</span>
-              </label>
-            ))}
+          <div className="src-folder">
+            <button
+              className="src-head"
+              type="button"
+              aria-expanded={shown('luma')}
+              onClick={() => toggleOpen('luma')}
+            >
+              <span className="src-chev" aria-hidden="true">
+                {shown('luma') ? '▾' : '▸'}
+              </span>
+              <span className="src-name">Registered in Luma</span>
+              <span className="src-n">({shownPanels.length})</span>
+            </button>
+            {shown('luma')
+              ? shownPanels.map((p) => (
+                  <label className="opt src-doc" key={p.id}>
+                    <input
+                      type="checkbox"
+                      checked={picked.has(p.id)}
+                      onChange={(e) => togglePanel(p.id, e.target.checked)}
+                    />
+                    <span>
+                      {p.name}
+                      <span className="sm">
+                        {p.id} · {p.project} · {p.date}
+                      </span>
+                    </span>
+                    <span className="n">{p.clones.length}</span>
+                  </label>
+                ))
+              : null}
           </div>
         ) : null}
         {selected.length ? (
@@ -228,13 +248,21 @@ export function VLibraryRail({
             </p>
           )}
         </div>
-        <div className="facet">
-          <button className="btn sm" type="button" onClick={() => setPasteOpen((o) => !o)}>
-            {pasteOpen ? 'Hide paste' : 'Paste names'}
+        <div className="src-folder">
+          <button
+            className="src-head"
+            type="button"
+            aria-expanded={pasteOpen}
+            onClick={() => setPasteOpen((o) => !o)}
+          >
+            <span className="src-chev" aria-hidden="true">
+              {pasteOpen ? '▾' : '▸'}
+            </span>
+            <span className="src-name">Paste names</span>
           </button>
           {pasteOpen ? (
-            <>
-              <p style={{ margin: '8px 0 6px', fontSize: 12, color: 'var(--ink-2)' }}>
+            <div className="facet" style={{ borderBottom: 0 }}>
+              <p style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--ink-2)' }}>
                 Manual load. Paste FASTA headers or one name per line if a clone is not in the
                 library.
               </p>
@@ -245,21 +273,20 @@ export function VLibraryRail({
                 value={library}
                 onChange={(e) => onLibrary(e.target.value)}
               />
-            </>
-          ) : (
-            <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--ink-2)' }}>
-              Expand a pairing or target to tick clones, or tick Luma panels to permute them.
-            </p>
-          )}
-          <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--ink-2)' }}>
-            {lib.length
-              ? `${lib.length} in the build: ${Object.keys(byT)
-                  .map((k) => `${byT[k]} ${k}`)
-                  .join(', ')}`
-              : 'None added yet. Slots fall back to names like aTfR1-01-VH.'}
-          </p>
+            </div>
+          ) : null}
         </div>
       </div>
+      <div className="src-options">
+        <span className="src-hint">
+          {lib.length
+            ? `${lib.length} in the build: ${Object.keys(byT)
+                .map((k) => `${byT[k]} ${k}`)
+                .join(', ')}`
+            : 'No documents in the build yet'}
+        </span>
+      </div>
+      {expanded ? grip : null}
     </aside>
   );
 }
