@@ -5,7 +5,8 @@ const STEPS: { g: Grain; lvl: string; name: string }[] = [
   { g: 'fmt', lvl: 'Level 1', name: 'Format' },
   { g: 'chn', lvl: 'Level 2', name: 'Chain' },
   { g: 'var', lvl: 'Level 3', name: 'Variable regions' },
-  { g: 'con', lvl: 'Level 4', name: 'Construct' },
+  { g: 'mut', lvl: 'Level 4', name: 'Mutations' },
+  { g: 'con', lvl: 'Level 5', name: 'Construct' },
 ];
 
 export function LevelTabs({
@@ -27,6 +28,7 @@ export function LevelTabs({
     fmt: `${model.reachF.size} of ${seed.formats.length} in play`,
     chn: `${model.buildC.size} in build, ${model.reachC.size} available`,
     var: `${slots} slot${slots === 1 ? '' : 's'}, ${n} build${n === 1 ? '' : 's'}`,
+    mut: `${model.buildM.size} in build, ${model.reachM.size} available`,
     con: `${model.buildV.size} in build, ${model.reachV.size} available`,
   };
 

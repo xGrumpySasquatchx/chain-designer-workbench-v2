@@ -23,7 +23,7 @@ export function VariableRegions({
           <h2>Variable regions</h2>
           <span className="count">0 slots</span>
         </div>
-        <div style={{ padding: '18px 13px', color: 'var(--ink-3)', fontSize: 12.5 }}>
+        <div style={{ padding: '18px 13px', color: 'var(--ink-3)', fontSize: 13 }}>
           No variable domains needed yet. Include a format on Level 1 and its V slots appear here.
         </div>
       </main>
@@ -63,10 +63,10 @@ export function VariableRegions({
                     {s.pos ? <span className="sm">{s.pos}</span> : null}
                   </td>
                   <td>{s.arm ? s.arm : <span className="pill">single</span>}</td>
-                  <td className="mono" style={{ fontSize: 11.5 }}>
+                  <td className="mono" style={{ fontSize: 12 }}>
                     {s.vec}
                   </td>
-                  <td className="mono" style={{ fontSize: 11.5 }}>
+                  <td className="mono" style={{ fontSize: 12 }}>
                     {s.product}
                   </td>
                   <td>{s.note ? <span className="pill blk">{s.note}</span> : null}</td>
@@ -78,7 +78,7 @@ export function VariableRegions({
       </div>
       <div className="sec" style={{ borderBottom: '1px solid var(--rule)' }}>
         <h3>Builds to make</h3>
-        <p style={{ margin: '0 0 6px', fontSize: 11.5, color: 'var(--ink-2)' }}>
+        <p style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--ink-2)' }}>
           One name per line. Every one gets the same backbone, so only these V regions change.
         </p>
         <textarea

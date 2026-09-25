@@ -1,0 +1,233 @@
+[
+  {
+    "id": "VR-001",
+    "name": "aTfR1-01-VH",
+    "clone": "aTfR1-01",
+    "t": "VH",
+    "target": "TfR1",
+    "pairing": "paired",
+    "partner": "aTfR1-01-VL",
+    "source": "Geneious library",
+    "notes": "Humanized campaign hit"
+  },
+  {
+    "id": "VR-002",
+    "name": "aTfR1-01-VL",
+    "clone": "aTfR1-01",
+    "t": "VL",
+    "target": "TfR1",
+    "pairing": "paired",
+    "partner": "aTfR1-01-VH",
+    "source": "Geneious library",
+    "notes": "Humanized campaign hit"
+  },
+  {
+    "id": "VR-003",
+    "name": "aTfR1-02-VH",
+    "clone": "aTfR1-02",
+    "t": "VH",
+    "target": "TfR1",
+    "pairing": "paired",
+    "partner": "aTfR1-02-VL",
+    "source": "Geneious library",
+    "notes": "Sibling of 01, lower affinity"
+  },
+  {
+    "id": "VR-004",
+    "name": "aTfR1-02-VL",
+    "clone": "aTfR1-02",
+    "t": "VL",
+    "target": "TfR1",
+    "pairing": "paired",
+    "partner": "aTfR1-02-VH",
+    "source": "Geneious library",
+    "notes": "Sibling of 01, lower affinity"
+  },
+  {
+    "id": "VR-005",
+    "name": "aTfR1-03-VH",
+    "clone": "aTfR1-03",
+    "t": "VH",
+    "target": "TfR1",
+    "pairing": "paired",
+    "partner": "aTfR1-03-VL",
+    "source": "Geneious library",
+    "notes": ""
+  },
+  {
+    "id": "VR-006",
+    "name": "aTfR1-03-VL",
+    "clone": "aTfR1-03",
+    "t": "VL",
+    "target": "TfR1",
+    "pairing": "paired",
+    "partner": "aTfR1-03-VH",
+    "source": "Geneious library",
+    "notes": ""
+  },
+  {
+    "id": "VR-007",
+    "name": "aHER2-tras-VH",
+    "clone": "aHER2-tras",
+    "t": "VH",
+    "target": "HER2",
+    "pairing": "paired",
+    "partner": "aHER2-tras-VL",
+    "source": "Geneious library",
+    "notes": "Trastuzumab VH"
+  },
+  {
+    "id": "VR-008",
+    "name": "aHER2-tras-VL",
+    "clone": "aHER2-tras",
+    "t": "VL",
+    "target": "HER2",
+    "pairing": "paired",
+    "partner": "aHER2-tras-VH",
+    "source": "Geneious library",
+    "notes": "Trastuzumab VL"
+  },
+  {
+    "id": "VR-009",
+    "name": "CD3-huUCHT1-VH",
+    "clone": "CD3-huUCHT1",
+    "t": "VH",
+    "target": "CD3ε",
+    "pairing": "paired",
+    "partner": "CD3-huUCHT1-VL",
+    "source": "Geneious library",
+    "notes": "Humanized UCHT1"
+  },
+  {
+    "id": "VR-010",
+    "name": "CD3-huUCHT1-VL",
+    "clone": "CD3-huUCHT1",
+    "t": "VL",
+    "target": "CD3ε",
+    "pairing": "paired",
+    "partner": "CD3-huUCHT1-VH",
+    "source": "Geneious library",
+    "notes": "Humanized UCHT1"
+  },
+  {
+    "id": "VR-011",
+    "name": "aPD1-01-VH",
+    "clone": "aPD1-01",
+    "t": "VH",
+    "target": "PD-1",
+    "pairing": "paired",
+    "partner": "aPD1-01-VL",
+    "source": "Campaign plate",
+    "notes": ""
+  },
+  {
+    "id": "VR-012",
+    "name": "aPD1-01-VL",
+    "clone": "aPD1-01",
+    "t": "VL",
+    "target": "PD-1",
+    "pairing": "paired",
+    "partner": "aPD1-01-VH",
+    "source": "Campaign plate",
+    "notes": ""
+  },
+  {
+    "id": "VR-013",
+    "name": "cLC-IGKV1-39",
+    "clone": "cLC-IGKV1-39",
+    "t": "VL",
+    "target": "common LC",
+    "pairing": "unpaired",
+    "partner": "",
+    "source": "Geneious library",
+    "notes": "Fixed germline VL used as a common light chain"
+  },
+  {
+    "id": "VR-014",
+    "name": "aALB-VHH-09",
+    "clone": "aALB-VHH-09",
+    "t": "VHH",
+    "target": "albumin",
+    "pairing": "unpaired",
+    "partner": "",
+    "source": "Geneious library",
+    "notes": "Half-life VHH"
+  },
+  {
+    "id": "VR-015",
+    "name": "aEGFR-VHH-04",
+    "clone": "aEGFR-VHH-04",
+    "t": "VHH",
+    "target": "EGFR",
+    "pairing": "unpaired",
+    "partner": "",
+    "source": "Geneious library",
+    "notes": ""
+  },
+  {
+    "id": "VR-016",
+    "name": "aCD3-VHH-02",
+    "clone": "aCD3-VHH-02",
+    "t": "VHH",
+    "target": "CD3ε",
+    "pairing": "unpaired",
+    "partner": "",
+    "source": "Campaign plate",
+    "notes": "Unpaired CD3 VHH, no light chain"
+  },
+  {
+    "id": "VR-017",
+    "name": "aTfR1-VHH-11",
+    "clone": "aTfR1-VHH-11",
+    "t": "VHH",
+    "target": "TfR1",
+    "pairing": "unpaired",
+    "partner": "",
+    "source": "Geneious library",
+    "notes": ""
+  },
+  {
+    "id": "VR-018",
+    "name": "aHER2-orphan-VH",
+    "clone": "aHER2-orphan",
+    "t": "VH",
+    "target": "HER2",
+    "pairing": "unpaired",
+    "partner": "",
+    "source": "Campaign plate",
+    "notes": "Heavy only; pair not recovered"
+  },
+  {
+    "id": "VR-019",
+    "name": "IL15-ORF",
+    "clone": "IL15-ORF",
+    "t": "ORF",
+    "target": "IL-15",
+    "pairing": "unpaired",
+    "partner": "",
+    "source": "Geneious library",
+    "notes": "Cytokine payload for Fc fusions"
+  },
+  {
+    "id": "VR-020",
+    "name": "aMSLN-01-VH",
+    "clone": "aMSLN-01",
+    "t": "VH",
+    "target": "mesothelin",
+    "pairing": "paired",
+    "partner": "aMSLN-01-VL",
+    "source": "Geneious library",
+    "notes": ""
+  },
+  {
+    "id": "VR-021",
+    "name": "aMSLN-01-VL",
+    "clone": "aMSLN-01",
+    "t": "VL",
+    "target": "mesothelin",
+    "pairing": "paired",
+    "partner": "aMSLN-01-VH",
+    "source": "Geneious library",
+    "notes": ""
+  }
+]

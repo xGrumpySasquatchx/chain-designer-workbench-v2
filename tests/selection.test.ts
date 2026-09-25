@@ -1,9 +1,23 @@
+import inventoryJson from '../src/data/inventory.json';
+import mutationsJson from '../src/data/mutations.json';
 import seedJson from '../src/data/seed.json';
+import vregionsJson from '../src/data/vregions.json';
+import { addToLibrary, filterCatalog } from '../src/model/library';
+import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
+import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
 import { emptySel, resolve, sortedIds } from '../src/model/selection';
 import { slotsFor } from '../src/model/slots';
-import type { Seed, Sel } from '../src/model/types';
+import type { InventoryBook, Mutation, Seed, Sel, VRegion } from '../src/model/types';
 
 const seed = seedJson as unknown as Seed;
+const mutations = mutationsJson as Mutation[];
+const inventory = inventoryJson as InventoryBook;
+const catalog = vregionsJson as VRegion[];
+
+function modelOf(patch: (s: Sel) => void) {
+  const s = selWith(patch);
+  return applyMutations(resolve(seed, s), seed, s, mutations);
+}
 
 function check(name: string, ok: boolean, detail?: string) {
   if (!ok) throw new Error(`fail  ${name}${detail ? ` — ${detail}` : ''}`);
@@ -118,6 +132,67 @@ check(
   'three of those slots sit on HC-B',
   s35.filter((s) => s.product === 'HC-B').length === 3,
   s35.map((s) => `${s.label}:${s.product}`).join(', '),
+);
+
+const lalapg = mutations.find((m) => m.name === 'LALA-PG');
+const knobSet = mutations.find((m) => m.name === 'Knob');
+const holeSet = mutations.find((m) => m.name === 'Hole');
+check('mutation reference loaded 31 sets', mutations.length === 31, String(mutations.length));
+check('LALA-PG maps onto its IgG1 vector', !!lalapg && specificVectorIds(lalapg, seed).includes('pDM-HC-IgG1-LALAPG'));
+
+const silenced = modelOf((s) => {
+  s.fmt['F-002'] = 'in';
+});
+check(
+  'silenced IgG1 claims LALA-PG and leaves Knob out of reach',
+  !!lalapg && silenced.claimM.has(lalapg.id) && !!knobSet && !silenced.reachM.has(knobSet.id),
+);
+
+const kih = modelOf((s) => {
+  s.fmt['F-016'] = 'in';
+});
+check(
+  'KiH format puts Knob and Hole in the build',
+  !!knobSet && !!holeSet && kih.buildM.has(knobSet.id) && kih.buildM.has(holeSet.id),
+);
+
+const picked = modelOf((s) => {
+  s.fmt['F-001'] = 'in';
+  if (lalapg) s.mut[lalapg.id] = 'in';
+});
+check(
+  'including LALA-PG on a WT format does not force an unavailable plasmid',
+  picked.buildV.has('pDM-HC-IgG1-WT') && !picked.buildV.has('pDM-HC-IgG1-LALAPG'),
+);
+
+check('kappa WT is on the shelf', stockStatus(inventory.constructs['pDM-LC-kappa-WT']) === 'In stock');
+check('hole plasmid is used up', stockStatus(inventory.constructs['pDM-HC-IgG1-HOLE']) === 'Used up');
+check(
+  'used-up stock line tells you to make more',
+  stockLine(inventory.constructs['pDM-HC-IgG1-HOLE']) === 'Used up — make more',
+);
+check(
+  'in-stock location names the box',
+  locationLine(inventory.constructs['pDM-LC-kappa-WT']) === 'Freezer B / rack 4 / box 12 / D6',
+);
+check('untracked chain is not made yet', stockStatus(inventory.chains['CH-15']) === 'Not made');
+
+const paired = filterCatalog(catalog, 'TfR1', 'paired');
+const unpaired = filterCatalog(catalog, '', 'unpaired');
+check(
+  'paired TfR1 search returns VH and VL together',
+  paired.some((v) => v.name === 'aTfR1-01-VH') && paired.some((v) => v.name === 'aTfR1-01-VL'),
+);
+check('unpaired filter keeps VHH and drops paired VH', unpaired.some((v) => v.t === 'VHH') && unpaired.every((v) => v.pairing === 'unpaired'));
+check(
+  'adding a pair is idempotent',
+  addToLibrary(addToLibrary('', ['aTfR1-01-VH', 'aTfR1-01-VL']), ['aTfR1-01-VH']) === 'aTfR1-01-VH\naTfR1-01-VL\n',
+);
+
+const open = resolve(seed, emptySel());
+check(
+  'with nothing picked every mutation is available',
+  mutations.every((m) => mutationRelevant(m, seed, open)),
 );
 
 console.log('\nAll selection checks passed.');

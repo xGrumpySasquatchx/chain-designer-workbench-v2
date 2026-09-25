@@ -27,6 +27,11 @@ function bucketOf(grain: Grain, id: string, mark: Mark | undefined, model: Model
     if (model.reachC.has(id)) return { b: 1 as const, label: BUCKET_LABEL[1] };
     return { b: 2 as const, label: BUCKET_LABEL[2] };
   }
+  if (grain === 'mut') {
+    if (model.buildM.has(id)) return { b: 0 as const, label: BUCKET_LABEL[0] };
+    if (model.reachM.has(id)) return { b: 1 as const, label: BUCKET_LABEL[1] };
+    return { b: 2 as const, label: BUCKET_LABEL[2] };
+  }
   if (model.buildV.has(id)) return { b: 0 as const, label: BUCKET_LABEL[0] };
   if (model.reachV.has(id)) return { b: 1 as const, label: BUCKET_LABEL[1] };
   return { b: 2 as const, label: BUCKET_LABEL[2] };
@@ -59,7 +64,7 @@ export function RowTable({
   onMark: (id: string, v: Mark) => void;
   onHideOut: () => void;
 }) {
-  const q = query.trim().toLowerCase();
+  const q = String(query ?? '').trim().toLowerCase();
   const items = rows
     .filter((r) => {
       const { b } = bucketOf(grain, r.id, marks[r.id], model, String(r.tier ?? ''));
@@ -90,7 +95,13 @@ export function RowTable({
     }
     const s = marks[it.r.id];
     const claimed =
-      grain === 'chn' ? model.claimC.has(it.r.id) : grain === 'con' ? model.claimV.has(it.r.id) : false;
+      grain === 'chn'
+        ? model.claimC.has(it.r.id)
+        : grain === 'con'
+          ? model.claimV.has(it.r.id)
+          : grain === 'mut'
+            ? model.claimM.has(it.r.id)
+            : false;
     let status: ReactNode = null;
     if (it.b === 2 && s !== 'out') {
       status =
@@ -98,11 +109,15 @@ export function RowTable({
           <span className="pill blk">No format in play uses this</span>
         ) : grain === 'con' ? (
           <span className="pill blk">No chain in play needs this</span>
+        ) : grain === 'mut' ? (
+          <span className="pill blk">Not used by the current format</span>
         ) : (
           <span className="pill blk">Blocked by a rule-out</span>
         );
     } else if (claimed && s !== 'in') {
       status = <span className="pill imp">Comes with your format</span>;
+    } else if (grain === 'mut' && it.r.partner && it.r.partner !== 'None' && s !== 'out' && it.b < 2) {
+      status = <span className="pill on">Needs {String(it.r.partner)}</span>;
     }
     const dis = it.b === 2 && s !== 'out';
     const st = s === 'out' ? 'out' : it.b === 2 ? 'unreach' : s === 'in' ? 'in' : claimed ? 'claim' : '';

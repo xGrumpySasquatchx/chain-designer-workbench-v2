@@ -5,7 +5,7 @@ function marked(rec: Marks, value: Mark): Set<string> {
 }
 
 export function emptySel(): Sel {
-  return { fmt: {}, chn: {}, con: {} };
+  return { fmt: {}, chn: {}, con: {}, mut: {} };
 }
 
 /** Pure cascade over `sel` and the seed. Including something never hides its siblings. */
@@ -109,6 +109,11 @@ export function resolve(seed: Seed, sel: Sel): Model {
     claimV,
     buildC,
     buildV,
+    inM: new Set(),
+    outM: new Set(),
+    reachM: new Set(),
+    claimM: new Set(),
+    buildM: new Set(),
     blocked,
     conflicts,
   };

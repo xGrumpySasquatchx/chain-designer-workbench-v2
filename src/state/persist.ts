@@ -26,9 +26,10 @@ export function loadState(): State {
         fmt: { ...emptySel().fmt, ...r.sel.fmt },
         chn: { ...emptySel().chn, ...r.sel.chn },
         con: { ...emptySel().con, ...r.sel.con },
+        mut: { ...emptySel().mut, ...r.sel.mut },
       };
     }
-    if (r.grain === 'fmt' || r.grain === 'chn' || r.grain === 'var' || r.grain === 'con') {
+    if (r.grain === 'fmt' || r.grain === 'chn' || r.grain === 'var' || r.grain === 'mut' || r.grain === 'con') {
       base.grain = r.grain as Grain;
     }
     if (typeof r.variants === 'string') base.variants = r.variants;

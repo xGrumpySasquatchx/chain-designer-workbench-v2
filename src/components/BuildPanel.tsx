@@ -44,8 +44,8 @@ export function BuildPanel({
   const n = variantList(variants).length;
   const nv = n || 1;
   const plas = back.filter((id) => V[id]?.needsInsert === 'Yes').length;
-  const outs: ['fmt' | 'chn' | 'con', string][] = [];
-  (['fmt', 'chn', 'con'] as const).forEach((g) =>
+  const outs: ['fmt' | 'chn' | 'con' | 'mut', string][] = [];
+  (['fmt', 'chn', 'con', 'mut'] as const).forEach((g) =>
     Object.keys(sel[g]).forEach((id) => {
       if (sel[g][id] === 'out') outs.push([g, id]);
     }),
@@ -69,6 +69,7 @@ export function BuildPanel({
         [
           ['Formats included', model.inF.size],
           ['Chains in the build', model.buildC.size],
+          ['Mutation sets', model.buildM.size],
           ['Plasmids in the backbone', model.buildV.size],
           ['V regions to supply', slots.length * nv],
         ] as [string, number][]
@@ -108,7 +109,7 @@ export function BuildPanel({
 
       <div className="sec">
         <h3>Geneious handoff</h3>
-        <p style={{ margin: '0 0 7px', fontSize: 11.5, color: 'var(--ink-2)' }}>
+        <p style={{ margin: '0 0 7px', fontSize: 12, color: 'var(--ink-2)' }}>
           {slots.length
             ? `${n ? `${n} build${n > 1 ? 's' : ''}` : '1 build'} x ${slots.length} V region${
                 slots.length > 1 ? 's' : ''
@@ -133,7 +134,7 @@ export function BuildPanel({
             {copied === 'Copy as CSV' ? 'Copied' : 'Copy as CSV'}
           </button>
         </div>
-        <p style={{ margin: '7px 0 0', fontSize: 11, color: 'var(--ink-3)' }}>
+        <p style={{ margin: '7px 0 0', fontSize: 11.5, color: 'var(--ink-3)' }}>
           Emits the assembly spec. Point it at your Geneious Prime library to run the builds.
         </p>
       </div>

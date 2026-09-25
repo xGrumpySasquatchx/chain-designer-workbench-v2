@@ -77,7 +77,7 @@ export function buildSlots(seed: Seed, buildV: Set<string>): BuildSlot[] {
 }
 
 export function slotsFor(seed: Seed, formatId: string): BuildSlot[] {
-  const sel: Sel = { fmt: { [formatId]: 'in' }, chn: {}, con: {} };
+  const sel: Sel = { fmt: { [formatId]: 'in' }, chn: {}, con: {}, mut: {} };
   return buildSlots(seed, resolve(seed, sel).buildV);
 }
 

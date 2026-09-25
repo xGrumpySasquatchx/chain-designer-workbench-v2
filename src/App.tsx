@@ -1,17 +1,38 @@
 import { useEffect, useMemo, useState } from 'react';
+import inventoryJson from './data/inventory.json';
+import mutationsJson from './data/mutations.json';
 import seedJson from './data/seed.json';
+import vregionsJson from './data/vregions.json';
 import { BuildPanel } from './components/BuildPanel';
 import { FacetRail, type FacetDef } from './components/FacetRail';
+import { InventoryCell } from './components/InventoryCell';
 import { LevelTabs } from './components/LevelTabs';
 import { RowTable, type Col, type Row } from './components/RowTable';
 import { VariableRegions } from './components/VariableRegions';
+import { VLibraryRail } from './components/VLibraryRail';
+import { stockStatus } from './model/inventory';
+import { variantList } from './model/library';
+import { applyMutations } from './model/mutations';
 import { emptySel, resolve } from './model/selection';
 import { buildSlots } from './model/slots';
-import { variantList } from './model/library';
-import type { Chain, Format, Grain, Mark, Seed, Sel, Vector } from './model/types';
+import type {
+  Chain,
+  Format,
+  Grain,
+  InventoryBook,
+  Mark,
+  Mutation,
+  Seed,
+  Sel,
+  Vector,
+  VRegion,
+} from './model/types';
 import { defaultState, loadState, saveState } from './state/persist';
 
 const seed = seedJson as unknown as Seed;
+const inventory = inventoryJson as InventoryBook;
+const mutations = mutationsJson as Mutation[];
+const catalog = vregionsJson as VRegion[];
 
 const FMT_FACETS: FacetDef[] = [
   { k: 'cls', h: 'Modality' },
@@ -27,6 +48,13 @@ const CHN_FACETS: FacetDef[] = [
   { k: 'fam', h: 'Chain family' },
   { k: 'fvmode', h: 'Fv contribution' },
   { k: 'crossover', h: 'Crossover' },
+  { k: 'stock', h: 'Inventory' },
+];
+const MUT_FACETS: FacetDef[] = [
+  { k: 'cls', h: 'Purpose' },
+  { k: 'domain', h: 'Chain / domain' },
+  { k: 'numbering', h: 'Numbering' },
+  { k: 'prota', h: 'Protein A' },
 ];
 const CON_FACETS: FacetDef[] = [
   { k: 'fam', h: 'Chain family' },
@@ -35,6 +63,7 @@ const CON_FACETS: FacetDef[] = [
   { k: 'prota', h: 'Protein A capture' },
   { k: 'sel', h: 'Selection marker' },
   { k: 'needsInsert', h: 'Takes an insert' },
+  { k: 'stock', h: 'Inventory' },
 ];
 
 const FMT_COLS: Col[] = [
@@ -112,6 +141,47 @@ const CHN_COLS: Col[] = [
       ),
   },
   { h: 'Vectors', cell: (r) => <span className="mono">{(r.vectors as string[]).length}</span> },
+  {
+    h: 'Inventory',
+    cell: (r) => <InventoryCell record={inventory.chains[String(r.id)]} />,
+  },
+];
+const MUT_COLS: Col[] = [
+  { h: 'Set', cls: 'idc', cell: (r) => String(r.name) },
+  {
+    h: 'Purpose',
+    cell: (r) => (
+      <>
+        <span className="nm">{String(r.purpose)}</span>
+        <span className="sm">{String(r.domain)}</span>
+      </>
+    ),
+  },
+  {
+    h: 'Positions',
+    cell: (r) => (
+      <>
+        {String(r.positions)}
+        <span className="sm">{String(r.numbering)}</span>
+      </>
+    ),
+  },
+  { h: 'Partner', cell: (r) => String(r.partner) },
+  {
+    h: 'Carried by',
+    cell: (r) => (
+      <>
+        <span className="mono" style={{ fontSize: 12 }}>
+          {String(r.carried)}
+        </span>
+        <span className="sm">{String(r.assay)}</span>
+      </>
+    ),
+  },
+  {
+    h: 'Notes',
+    cell: (r) => <span className="sm" style={{ marginTop: 0 }}>{String(r.notes)}</span>,
+  },
 ];
 const CON_COLS: Col[] = [
   { h: 'Vector', cls: 'idc', cell: (r) => String(r.id) },
@@ -140,6 +210,10 @@ const CON_COLS: Col[] = [
   },
   { h: 'Marker', cell: (r) => String(r.sel) },
   { h: 'Protein A', cell: (r) => String(r.prota) },
+  {
+    h: 'Inventory',
+    cell: (r) => <InventoryCell record={inventory.constructs[String(r.id)]} />,
+  },
 ];
 
 function cloneSel(sel: Sel): Sel {
@@ -147,16 +221,28 @@ function cloneSel(sel: Sel): Sel {
     fmt: { ...sel.fmt },
     chn: { ...sel.chn },
     con: { ...sel.con },
+    mut: { ...sel.mut },
   };
+}
+
+function withStock<T extends { id: string }>(rows: T[], book: InventoryBook['chains']): Row[] {
+  return rows.map((r) => ({ ...r, stock: stockStatus(book[r.id]) })) as unknown as Row[];
 }
 
 export default function App() {
   const [state, setState] = useState(defaultState);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState<Record<Grain, string>>({
+    fmt: '',
+    chn: '',
+    var: '',
+    mut: '',
+    con: '',
+  });
   const [facetSel, setFacetSel] = useState<Record<Grain, Record<string, Set<string>>>>({
     fmt: {},
     chn: {},
     var: {},
+    mut: {},
     con: {},
   });
 
@@ -169,16 +255,19 @@ export default function App() {
   }, [state]);
 
   useEffect(() => {
-    const hue = { fmt: '--fmt', chn: '--chn', var: '--vr', con: '--con' }[state.grain];
-    const bg = { fmt: '--fmt-bg', chn: '--chn-bg', var: '--vr-bg', con: '--con-bg' }[state.grain];
+    const hue = { fmt: '--fmt', chn: '--chn', var: '--vr', mut: '--mut', con: '--con' }[state.grain];
+    const bg = { fmt: '--fmt-bg', chn: '--chn-bg', var: '--vr-bg', mut: '--mut-bg', con: '--con-bg' }[state.grain];
     document.documentElement.style.setProperty('--grain', `var(${hue})`);
     document.documentElement.style.setProperty('--grain-bg', `var(${bg})`);
   }, [state.grain]);
 
-  const model = useMemo(() => resolve(seed, state.sel), [state.sel]);
+  const model = useMemo(
+    () => applyMutations(resolve(seed, state.sel), seed, state.sel, mutations),
+    [state.sel],
+  );
   const slots = useMemo(() => buildSlots(seed, model.buildV), [model.buildV]);
 
-  const setMark = (grain: 'fmt' | 'chn' | 'con', id: string, v: Mark) => {
+  const setMark = (grain: 'fmt' | 'chn' | 'con' | 'mut', id: string, v: Mark) => {
     setState((s) => {
       const next = cloneSel(s.sel);
       if (next[grain][id] === v) delete next[grain][id];
@@ -189,21 +278,33 @@ export default function App() {
 
   const grain = state.grain;
   const isVar = grain === 'var';
-  const facets = grain === 'fmt' ? FMT_FACETS : grain === 'chn' ? CHN_FACETS : CON_FACETS;
+  const facets =
+    grain === 'fmt' ? FMT_FACETS : grain === 'chn' ? CHN_FACETS : grain === 'mut' ? MUT_FACETS : CON_FACETS;
   const rows: Row[] =
     grain === 'fmt'
       ? (seed.formats as Format[] as unknown as Row[])
       : grain === 'chn'
-        ? (seed.chains as Chain[] as unknown as Row[])
-        : (seed.vectors as Vector[] as unknown as Row[]);
-  const cols = grain === 'fmt' ? FMT_COLS : grain === 'chn' ? CHN_COLS : CON_COLS;
-  const title = grain === 'fmt' ? 'Formats' : grain === 'chn' ? 'Chain archetypes' : 'Destination vectors';
+        ? withStock(seed.chains as Chain[], inventory.chains)
+        : grain === 'mut'
+          ? (mutations as unknown as Row[])
+          : withStock(seed.vectors as Vector[], inventory.constructs);
+  const cols = grain === 'fmt' ? FMT_COLS : grain === 'chn' ? CHN_COLS : grain === 'mut' ? MUT_COLS : CON_COLS;
+  const title =
+    grain === 'fmt'
+      ? 'Formats'
+      : grain === 'chn'
+        ? 'Chain archetypes'
+        : grain === 'mut'
+          ? 'Mutation sets'
+          : 'Destination vectors';
   const text = (r: Row) =>
     grain === 'fmt'
       ? [r.id, r.name, r.target, r.mutset, r.notes, r.mispair, r.tier].join(' ')
       : grain === 'chn'
-        ? [r.id, r.name, r.note, r.module, r.partner, r.slots].join(' ')
-        : [r.id, r.role, r.insert, r.module, r.eng, r.note, r.sel].join(' ');
+        ? [r.id, r.name, r.note, r.module, r.partner, r.slots, r.stock].join(' ')
+        : grain === 'mut'
+          ? [r.id, r.name, r.purpose, r.positions, r.domain, r.carried, r.notes, r.partner].join(' ')
+          : [r.id, r.role, r.insert, r.module, r.eng, r.note, r.sel, r.stock].join(' ');
 
   return (
     <>
@@ -225,31 +326,34 @@ export default function App() {
       </header>
 
       <div className="wrap">
-        <FacetRail
-          grain={grain}
-          title={isVar ? 'Your V region library' : 'Narrow the list'}
-          facets={facets}
-          rows={rows}
-          facetSel={facetSel[grain === 'var' ? 'fmt' : grain]}
-          query={query}
-          library={state.library}
-          onQuery={setQuery}
-          onToggle={(key, value, on) => {
-            const g = grain === 'var' ? 'fmt' : grain;
-            setFacetSel((fs) => {
-              const cur = new Set(fs[g][key] ?? []);
-              if (on) cur.add(value);
-              else cur.delete(value);
-              return { ...fs, [g]: { ...fs[g], [key]: cur } };
-            });
-          }}
-          onClear={() => {
-            const g = grain === 'var' ? 'fmt' : grain;
-            setFacetSel((fs) => ({ ...fs, [g]: {} }));
-            setQuery('');
-          }}
-          onLibrary={(library) => setState((s) => ({ ...s, library }))}
-        />
+        {isVar ? (
+          <VLibraryRail
+            catalog={catalog}
+            library={state.library}
+            onLibrary={(library) => setState((s) => ({ ...s, library }))}
+          />
+        ) : (
+          <FacetRail
+            title="Narrow the list"
+            facets={facets}
+            rows={rows}
+            facetSel={facetSel[grain]}
+            query={query[grain] ?? ''}
+            onQuery={(q) => setQuery((qs) => ({ ...qs, [grain]: q }))}
+            onToggle={(key, value, on) => {
+              setFacetSel((fs) => {
+                const cur = new Set(fs[grain][key] ?? []);
+                if (on) cur.add(value);
+                else cur.delete(value);
+                return { ...fs, [grain]: { ...fs[grain], [key]: cur } };
+              });
+            }}
+            onClear={() => {
+              setFacetSel((fs) => ({ ...fs, [grain]: {} }));
+              setQuery((qs) => ({ ...qs, [grain]: '' }));
+            }}
+          />
+        )}
 
         {isVar ? (
           <VariableRegions
@@ -274,12 +378,14 @@ export default function App() {
             rows={rows}
             cols={cols}
             model={model}
-            marks={state.sel[grain]}
-            query={query}
+            marks={grain === 'mut' ? state.sel.mut : grain === 'fmt' || grain === 'chn' || grain === 'con' ? state.sel[grain] : {}}
+            query={query[grain] ?? ''}
             facetSel={facetSel[grain]}
             hideOut={state.hideOut}
             text={text}
-            onMark={(id, v) => setMark(grain, id, v)}
+            onMark={(id, v) => {
+              if (grain === 'fmt' || grain === 'chn' || grain === 'con' || grain === 'mut') setMark(grain, id, v);
+            }}
             onHideOut={() => setState((s) => ({ ...s, hideOut: !s.hideOut }))}
           />
         )}

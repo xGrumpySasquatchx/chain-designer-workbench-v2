@@ -1,6 +1,8 @@
 export type Tier = 1 | 2 | 3 | 4 | 5 | 6;
-export type Grain = 'fmt' | 'chn' | 'var' | 'con';
+export type Grain = 'fmt' | 'chn' | 'var' | 'mut' | 'con';
 export type Mark = 'in' | 'out';
+export type StockStatus = 'In stock' | 'Low' | 'Used up' | 'Not made';
+export type Pairing = 'paired' | 'unpaired';
 
 export interface Format {
   id: string;
@@ -98,12 +100,56 @@ export interface Seed {
   tiers: Record<string, string>;
 }
 
+export interface InventoryRecord {
+  location: string;
+  position: string;
+  volumeUl: number;
+  concentrationNgUl: number;
+  plasmidUg: number;
+  glycerolStock: boolean;
+}
+
+export interface InventoryBook {
+  chains: Record<string, InventoryRecord>;
+  constructs: Record<string, InventoryRecord>;
+}
+
+export interface Mutation {
+  id: string;
+  name: string;
+  purpose: string;
+  domain: string;
+  positions: string;
+  numbering: string;
+  partner: string;
+  prota: string;
+  pi: string;
+  carried: string;
+  assay: string;
+  notes: string;
+  rank: number;
+  cls: string;
+}
+
+export interface VRegion {
+  id: string;
+  name: string;
+  clone: string;
+  t: 'VH' | 'VL' | 'VHH' | 'ORF';
+  target: string;
+  pairing: Pairing;
+  partner: string;
+  source: string;
+  notes: string;
+}
+
 export type Marks = Record<string, Mark>;
 
 export interface Sel {
   fmt: Marks;
   chn: Marks;
   con: Marks;
+  mut: Marks;
 }
 
 export interface Preset {
@@ -136,6 +182,11 @@ export interface Model {
   claimV: Set<string>;
   buildC: Set<string>;
   buildV: Set<string>;
+  inM: Set<string>;
+  outM: Set<string>;
+  reachM: Set<string>;
+  claimM: Set<string>;
+  buildM: Set<string>;
   blocked: Set<string>;
   conflicts: string[];
 }

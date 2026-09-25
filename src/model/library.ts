@@ -1,8 +1,50 @@
-import type { VSlot } from './types';
+import type { Pairing, VRegion, VSlot } from './types';
 
 export interface LibEntry {
   name: string;
   t: string;
+}
+
+export function libraryNames(library: string): Set<string> {
+  return new Set(parseLibrary(library).map((e) => e.name));
+}
+
+export function addToLibrary(library: string, names: string[]): string {
+  const have = libraryNames(library);
+  const extra = names.filter((n) => n && !have.has(n));
+  if (!extra.length) return library;
+  const body = library.trimEnd();
+  return (body ? `${body}\n` : '') + extra.join('\n') + '\n';
+}
+
+export function vregionText(v: VRegion): string {
+  return [v.name, v.clone, v.t, v.target, v.pairing, v.partner, v.source, v.notes].join(' ');
+}
+
+export function filterCatalog(
+  catalog: VRegion[],
+  query: string,
+  pairing: Pairing | 'all',
+): VRegion[] {
+  const q = query.trim().toLowerCase();
+  return catalog.filter((v) => {
+    if (pairing !== 'all' && v.pairing !== pairing) return false;
+    if (q && !vregionText(v).toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+export function groupCatalog(rows: VRegion[]): { clone: string; items: VRegion[] }[] {
+  const order: string[] = [];
+  const map = new Map<string, VRegion[]>();
+  rows.forEach((v) => {
+    if (!map.has(v.clone)) {
+      map.set(v.clone, []);
+      order.push(v.clone);
+    }
+    map.get(v.clone)!.push(v);
+  });
+  return order.map((clone) => ({ clone, items: map.get(clone)! }));
 }
 
 export function parseLibrary(library: string): LibEntry[] {
