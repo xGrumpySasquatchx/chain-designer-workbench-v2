@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { rowHasFacet } from '../model/facets';
 import type { Grain, Mark, Model } from '../model/types';
 
 export interface Col {
@@ -78,7 +79,7 @@ export function RowTable({
       if (hideOut && b === 2) return false;
       for (const k of Object.keys(facetSel)) {
         const st = facetSel[k];
-        if (st && st.size && !st.has(String(r[k] ?? ''))) return false;
+        if (st && st.size && !rowHasFacet(r, k, st)) return false;
       }
       if (q && !text(r).toLowerCase().includes(q)) return false;
       return true;

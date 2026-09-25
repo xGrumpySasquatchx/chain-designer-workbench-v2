@@ -13,12 +13,14 @@ import { FoldBtn, ResizeGrip, useSidePanels } from './components/SidePanels';
 import { VariableRegions } from './components/VariableRegions';
 import { VLibraryRail } from './components/VLibraryRail';
 import { stockStatus } from './model/inventory';
+import { rowHasFacet } from './model/facets';
 import {
   addToLibrary,
   applyClones,
   applyPanels,
   clonesOf,
   fillAssignFromCatalog,
+  insertsByVector,
   mergeStandaloneBuilds,
   parseLibrary,
   variantList,
@@ -66,7 +68,7 @@ const CHN_FACETS: FacetDef[] = [
 const MUT_FACETS: FacetDef[] = [
   { k: 'cls', h: 'Purpose' },
   { k: 'domain', h: 'Chain / domain' },
-  { k: 'numbering', h: 'Numbering' },
+  { k: 'numbering', h: 'Numbering', split: true },
   { k: 'prota', h: 'Protein A' },
 ];
 const CON_FACETS: FacetDef[] = [
@@ -225,6 +227,29 @@ const CON_COLS: Col[] = [
     sort: (r) => String(r.insert),
   },
   {
+    h: 'Variable regions',
+    cell: (r) => {
+      const names = String(r.vnames ?? '')
+        .split(' · ')
+        .map((n) => n.trim())
+        .filter(Boolean);
+      return names.length ? (
+        <div className="vhit-dom" style={{ marginTop: 0 }}>
+          {names.map((n) => (
+            <span className="pill on" key={n}>
+              {n}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <span className="sm" style={{ marginTop: 0 }}>
+          None assigned
+        </span>
+      );
+    },
+    sort: (r) => String(r.vnames ?? ''),
+  },
+  {
     h: 'Engineering in the vector',
     cell: (r) => (
       <>
@@ -280,7 +305,7 @@ function pruneFacetSel(facetSel: Record<string, Set<string>>, rows: Row[]): Reco
   const next: Record<string, Set<string>> = {};
   for (const [k, set] of Object.entries(facetSel)) {
     if (!set?.size) continue;
-    const keep = new Set([...set].filter((v) => rows.some((r) => String(r[k] ?? '') === v)));
+    const keep = new Set([...set].filter((v) => rows.some((r) => rowHasFacet(r, k, new Set([v])))));
     if (keep.size) next[k] = keep;
   }
   return next;
@@ -337,6 +362,10 @@ export default function App() {
     [state.sel, fmtFocus],
   );
   const slots = useMemo(() => buildSlots(seed, model.buildV), [model.buildV]);
+  const vByVec = useMemo(
+    () => insertsByVector(slots, state.variants, state.assign),
+    [slots, state.variants, state.assign],
+  );
   const slotSig = [...model.buildV].sort().join(',');
   useEffect(() => {
     setState((s) => {
@@ -365,7 +394,10 @@ export default function App() {
         ? withStock(seed.chains as Chain[], inventory.chains)
         : grain === 'mut'
           ? (mutations as unknown as Row[])
-          : withStock(seed.vectors as Vector[], inventory.constructs);
+          : withStock(seed.vectors as Vector[], inventory.constructs).map((r) => ({
+              ...r,
+              vnames: (vByVec[r.id] ?? []).join(' · '),
+            }));
   const cols = grain === 'fmt' ? FMT_COLS : grain === 'chn' ? CHN_COLS : grain === 'mut' ? MUT_COLS : CON_COLS;
   const title =
     grain === 'fmt'
@@ -381,7 +413,7 @@ export default function App() {
       : grain === 'chn'
         ? rows.filter((r) => model.reachC.has(r.id) || model.buildC.has(r.id))
         : grain === 'mut'
-          ? rows.filter((r) => model.reachM.has(r.id) || model.buildM.has(r.id))
+          ? rows
           : rows.filter((r) => model.reachV.has(r.id) || model.buildV.has(r.id));
   const text = (r: Row) =>
     grain === 'fmt'
@@ -389,8 +421,8 @@ export default function App() {
       : grain === 'chn'
         ? [r.id, r.name, r.note, r.module, r.partner, r.slots, r.stock].join(' ')
         : grain === 'mut'
-          ? [r.id, r.name, r.purpose, r.positions, r.domain, r.carried, r.notes, r.partner].join(' ')
-          : [r.id, r.role, r.insert, r.module, r.eng, r.note, r.sel, r.stock].join(' ');
+          ? [r.id, r.name, r.purpose, r.positions, r.numbering, r.domain, r.carried, r.notes, r.partner].join(' ')
+          : [r.id, r.role, r.insert, r.module, r.eng, r.note, r.sel, r.stock, r.vnames].join(' ');
   const liveFacets = grain === 'fmt' ? facetSel.fmt : pruneFacetSel(facetSel[grain] ?? {}, railRows);
 
   return (
@@ -441,7 +473,7 @@ export default function App() {
                   : `${model.buildV.size} in build, ${model.reachV.size} available`}
         </span>
         <span className="stat-grow" />
-        <span>EU for Fc and CH1 · Kabat for V domains · selections stay in this browser</span>
+        <span>EU for Fc and CH1 · Kabat / IMGT for V domains · selections stay in this browser</span>
       </div>
 
       <div className="wrap" style={sides.wrapStyle}>
@@ -493,6 +525,7 @@ export default function App() {
           />
         ) : (
           <FacetRail
+            key={grain}
             title="Sources"
             facets={facets}
             rows={railRows}
@@ -563,6 +596,8 @@ export default function App() {
           sel={state.sel}
           variants={state.variants}
           assign={state.assign}
+          library={state.library}
+          mutations={mutations}
           presets={state.presets}
           expanded={sides.layout.rightOpen}
           onFold={() => sides.toggle('right')}

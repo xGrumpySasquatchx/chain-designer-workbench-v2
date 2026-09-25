@@ -240,6 +240,40 @@ export function cellValue(
   return variant === '(unnamed build)' ? fallback : `${variant}-${fallback}`;
 }
 
+export function insertsByVector(
+  slots: BuildSlot[],
+  variants: string,
+  assign: Record<string, Record<string, string>>,
+): Record<string, string[]> {
+  const map: Record<string, string[]> = {};
+  variantRows(variants).forEach((vr) => {
+    slots.forEach((s) => {
+      const part = assign[vr]?.[s.key]?.trim();
+      if (!part) return;
+      const list = map[s.vec] ?? (map[s.vec] = []);
+      if (!list.includes(part)) list.push(part);
+    });
+  });
+  return map;
+}
+
+export function assignedInserts(
+  slots: BuildSlot[],
+  variants: string,
+  assign: Record<string, Record<string, string>>,
+): { id: string; label: string; note: string }[] {
+  const out: { id: string; label: string; note: string }[] = [];
+  variantRows(variants).forEach((vr) => {
+    slots.forEach((s) => {
+      const part = assign[vr]?.[s.key]?.trim();
+      if (!part) return;
+      const note = vr === '(unnamed build)' ? s.label : `${s.label} · ${vr}`;
+      out.push({ id: `${vr}::${s.key}`, label: part, note });
+    });
+  });
+  return out;
+}
+
 export function libForType(lib: LibEntry[], t: VSlot['t']): LibEntry[] {
   return lib.filter((e) => !e.t || e.t === t);
 }

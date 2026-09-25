@@ -3,12 +3,13 @@ import mutationsJson from '../src/data/mutations.json';
 import seedJson from '../src/data/seed.json';
 import vregionsJson from '../src/data/vregions.json';
 import panelsJson from '../src/data/panels.json';
-import { addToLibrary, applyClones, applyPanels, filterCatalog, permuteCount, removeFromLibrary, variantList, vregionText } from '../src/model/library';
+import { addToLibrary, applyClones, applyPanels, filterCatalog, insertsByVector, permuteCount, removeFromLibrary, variantList, vregionText } from '../src/model/library';
 import { compileSearch, panelMatches, searchCatalog, treeCatalog } from '../src/model/vsearch';
 import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
 import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
 import { slotsFor } from '../src/model/slots';
+import { facetTokens, rowHasFacet } from '../src/model/facets';
 import type { InventoryBook, Mutation, Seed, Sel, VPanel, VRegion } from '../src/model/types';
 
 const seed = seedJson as unknown as Seed;
@@ -274,6 +275,13 @@ check(
     pd1On.assign['aPD1-01']?.[mabVl.key] === 'aPD1-01-VL',
   JSON.stringify(pd1On.assign['aPD1-01']),
 );
+const pd1Inserts = insertsByVector(mabSlots, pd1On.variants, pd1On.assign);
+check(
+  'those PD-1 names land on the mAb plasmids',
+  (pd1Inserts['pDM-HC-IgG1-WT'] ?? []).includes('aPD1-01-VH') &&
+    (pd1Inserts['pDM-LC-kappa-WT'] ?? []).includes('aPD1-01-VL'),
+  JSON.stringify(pd1Inserts),
+);
 const pd1Off = applyClones(pd1Pair, mabSlots, pd1On.library, pd1On.variants, pd1On.assign, false);
 check(
   'unticking PD-1 drops it from the build',
@@ -388,5 +396,23 @@ for (const cls of [...new Set(seed.formats.map((f) => f.cls))].sort()) {
     `chains ${[...m.buildC].join(',')} plasmids ${m.buildV.size} slots ${nSlots}`,
   );
 }
+
+check(
+  'numbering facet exposes IMGT as its own token',
+  mutations.some((m) => facetTokens(m.numbering).includes('IMGT')) &&
+    mutations.some((m) => m.numbering === 'Kabat / IMGT'),
+);
+check(
+  'an IMGT numbering filter matches Kabat / IMGT rows',
+  rowHasFacet({ numbering: 'Kabat / IMGT' }, 'numbering', new Set(['IMGT'])),
+);
+check(
+  'n/a numbering stays one token',
+  facetTokens('n/a').join() === 'n/a' && !facetTokens('n/a').includes('n'),
+);
+check(
+  'slash-space numbering splits IMGT without breaking n/a',
+  facetTokens('Kabat / IMGT').join() === 'Kabat,IMGT',
+);
 
 console.log('\nAll selection checks passed.');

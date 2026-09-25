@@ -1,12 +1,122 @@
 import { useState, type ReactNode } from 'react';
+import { SrcFolder } from './FacetRail';
 import { buildListText, gaalCsv, gaalJobs } from '../model/gaal';
-import { variantList } from '../model/library';
+import { assignedInserts, parseLibrary, variantList } from '../model/library';
 import { backboneIds, buildSlots, slotChip } from '../model/slots';
-import type { Grain, Model, Preset, Seed, Sel } from '../model/types';
+import type { Grain, Model, Mutation, Preset, Seed, Sel } from '../model/types';
 
 function copy(text: string) {
   if (navigator.clipboard) return navigator.clipboard.writeText(text);
   return Promise.reject();
+}
+
+function SelectionFolders({
+  seed,
+  model,
+  variants,
+  assign,
+  library,
+  mutations,
+}: {
+  seed: Seed;
+  model: Model;
+  variants: string;
+  assign: Record<string, Record<string, string>>;
+  library: string;
+  mutations: Mutation[];
+}) {
+  const [open, setOpen] = useState<Set<string>>(
+    () => new Set(['fmt', 'chn', 'var', 'mut', 'con']),
+  );
+  const toggle = (key: string) => {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+  const slots = buildSlots(seed, model.buildV);
+  const assigned = assignedInserts(slots, variants, assign);
+  const assignedNames = new Set(assigned.map((a) => a.label));
+  const libExtra = parseLibrary(library)
+    .filter((e) => e.name && !assignedNames.has(e.name))
+    .map((e) => ({
+      id: `lib:${e.name}`,
+      label: e.name,
+      note: e.t ? `${e.t} · in library` : 'in library',
+    }));
+  const vItems = [...assigned, ...libExtra];
+  const folders: {
+    k: string;
+    name: string;
+    items: { id: string; label: string; note: string }[];
+    empty: string;
+  }[] = [
+    {
+      k: 'fmt',
+      name: 'Format',
+      empty: 'Include a format on Level 1.',
+      items: seed.formats
+        .filter((f) => model.inF.has(f.id))
+        .map((f) => ({ id: f.id, label: f.name, note: f.id })),
+    },
+    {
+      k: 'chn',
+      name: 'Chain',
+      empty: 'Chains appear once a format is in the build.',
+      items: seed.chains
+        .filter((c) => model.buildC.has(c.id))
+        .map((c) => ({ id: c.id, label: c.name, note: c.id })),
+    },
+    {
+      k: 'var',
+      name: 'Variable regions',
+      empty: 'Assign V regions on Level 3.',
+      items: vItems,
+    },
+    {
+      k: 'mut',
+      name: 'Mutations',
+      empty: 'No mutation sets in this build.',
+      items: mutations
+        .filter((m) => model.buildM.has(m.id))
+        .map((m) => ({ id: m.id, label: m.name, note: m.id })),
+    },
+    {
+      k: 'con',
+      name: 'Construct',
+      empty: 'Plasmids appear once a format is in the build.',
+      items: seed.vectors
+        .filter((v) => model.buildV.has(v.id))
+        .map((v) => ({ id: v.id, label: v.id, note: v.insert })),
+    },
+  ];
+
+  return (
+    <>
+      {folders.map((f) => (
+        <SrcFolder
+          key={f.k}
+          name={f.name}
+          count={f.items.length ? `(${f.items.length})` : '(0)'}
+          open={open.has(f.k)}
+          onToggle={() => toggle(f.k)}
+        >
+          {f.items.length ? (
+            f.items.map((it) => (
+              <div className="src-doc viewer-sel" key={it.id}>
+                <span>{it.label}</span>
+                {it.note && it.note !== it.label ? <span className="sm">{it.note}</span> : null}
+              </div>
+            ))
+          ) : (
+            <div className="src-empty">{f.empty}</div>
+          )}
+        </SrcFolder>
+      ))}
+    </>
+  );
 }
 
 export function BuildPanel({
@@ -15,6 +125,8 @@ export function BuildPanel({
   sel,
   variants,
   assign,
+  library,
+  mutations,
   presets,
   onReset,
   onRuleOut,
@@ -32,6 +144,8 @@ export function BuildPanel({
   sel: Sel;
   variants: string;
   assign: Record<string, Record<string, string>>;
+  library: string;
+  mutations: Mutation[];
   presets: Preset[];
   onReset: () => void;
   onRuleOut: (id: string) => void;
@@ -101,20 +215,14 @@ export function BuildPanel({
       <div className="viewer-body">
       {view === 'info' ? (
         <>
-          {(
-            [
-              ['Formats included', model.inF.size],
-              ['Chains in the build', model.buildC.size],
-              ['Mutation sets', model.buildM.size],
-              ['Plasmids in the backbone', model.buildV.size],
-              ['V regions to supply', slots.length * nv],
-            ] as [string, number][]
-          ).map(([k, v]) => (
-            <div className="metric" key={k}>
-              <span className="k">{k}</span>
-              <span className={`v ${v === 0 ? 'z' : ''}`}>{v}</span>
-            </div>
-          ))}
+          <SelectionFolders
+            seed={seed}
+            model={model}
+            variants={variants}
+            assign={assign}
+            library={library}
+            mutations={mutations}
+          />
           {model.conflicts.slice(0, 4).map((c) => (
             <div className="note" key={c}>
               <strong>Check</strong> {c}
@@ -262,4 +370,3 @@ export function BuildPanel({
     </aside>
   );
 }
-
