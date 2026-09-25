@@ -1,15 +1,25 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   addToLibrary,
-  filterCatalog,
-  groupCatalog,
   libraryNames,
   parseLibrary,
   permuteCount,
   removeFromLibrary,
   taggedName,
 } from '../model/library';
-import type { Pairing, VPanel, VRegion } from '../model/types';
+import type { VPanel, VRegion } from '../model/types';
+import {
+  blankTerm,
+  branchCount,
+  compileSearch,
+  panelMatches,
+  searchActive,
+  searchCatalog,
+  treeCatalog,
+  type CloneGroup,
+  type SearchTerm,
+} from '../model/vsearch';
+import { VSearch } from './VSearch';
 
 export function VLibraryRail({
   catalog,
@@ -27,18 +37,30 @@ export function VLibraryRail({
   onPanels: (ids: string[]) => void;
 }) {
   const [query, setQuery] = useState('');
-  const [pairing, setPairing] = useState<Pairing | 'all'>('all');
+  const [advanced, setAdvanced] = useState(false);
+  const [match, setMatch] = useState<'all' | 'any'>('all');
+  const [terms, setTerms] = useState<SearchTerm[]>([blankTerm()]);
+  const [open, setOpen] = useState<Set<string>>(() => new Set(['paired', 'unpaired']));
   const [pasteOpen, setPasteOpen] = useState(false);
   const lib = parseLibrary(library);
   const have = libraryNames(library);
   const picked = new Set(selected);
-  const hits = useMemo(() => filterCatalog(catalog, query, pairing), [catalog, query, pairing]);
-  const groups = useMemo(() => groupCatalog(hits), [hits]);
-  const q = query.trim().toLowerCase();
-  const shownPanels = panels.filter((p) => {
-    if (!q) return true;
-    return [p.name, p.target, p.notes, ...p.clones].join(' ').toLowerCase().includes(q);
-  });
+  const compiled = useMemo(
+    () => compileSearch(query, advanced ? terms : [], match),
+    [query, advanced, terms, match],
+  );
+  const hits = useMemo(() => searchCatalog(catalog, compiled), [catalog, compiled]);
+  const tree = useMemo(() => treeCatalog(hits), [hits]);
+  const shownPanels = panels.filter((p) => panelMatches(p, compiled));
+  const searching = searchActive(compiled);
+  const targets = useMemo(
+    () => unique([...catalog.map((v) => v.target), ...panels.map((p) => p.target)]),
+    [catalog, panels],
+  );
+  const projects = useMemo(
+    () => unique([...catalog.map((v) => v.project), ...panels.map((p) => p.project)]),
+    [catalog, panels],
+  );
   const sizes = selected
     .map((id) => panels.find((p) => p.id === id)?.clones.length ?? 0)
     .filter((n) => n > 0);
@@ -49,40 +71,29 @@ export function VLibraryRail({
     byT[k] = (byT[k] || 0) + 1;
   });
 
+  const toggleOpen = (key: string) => {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+  const shown = (key: string) => searching || open.has(key);
+
   const toggleClone = (items: VRegion[], on: boolean) => {
     const names = items.map(taggedName);
     onLibrary(on ? addToLibrary(library, names) : removeFromLibrary(library, names));
   };
-
+  const toggleGroups = (groups: CloneGroup[], on: boolean) => {
+    toggleClone(
+      groups.flatMap((g) => g.items),
+      on,
+    );
+  };
   const togglePanel = (id: string, on: boolean) => {
     onPanels(on ? [...selected.filter((x) => x !== id), id] : selected.filter((x) => x !== id));
   };
-
-  const panelBlock = (title: string, hint: string, rows: VPanel[]) =>
-    rows.length ? (
-      <div className="facet">
-        <h3>{title}</h3>
-        <p className="empty" style={{ margin: '0 0 8px' }}>
-          {hint}
-        </p>
-        {rows.map((p) => (
-          <label className="opt" key={p.id}>
-            <input
-              type="checkbox"
-              checked={picked.has(p.id)}
-              onChange={(e) => togglePanel(p.id, e.target.checked)}
-            />
-            <span>
-              {p.name}
-              <span className="sm">
-                {p.clones.length} sequences · {p.target}
-              </span>
-            </span>
-            <span className="n">{p.clones.length}</span>
-          </label>
-        ))}
-      </div>
-    ) : null;
 
   return (
     <aside className="panel rail" aria-label="V region library">
@@ -91,39 +102,43 @@ export function VLibraryRail({
         <span className="count">{lib.length ? `${lib.length} in build` : 'empty'}</span>
       </div>
       <div className="rail-body">
-        <div className="facet">
-          <input
-            className="search"
-            type="search"
-            placeholder="Search clones or panels"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <div className="pair-tog" role="group" aria-label="Pairing">
-            {(
-              [
-                ['all', 'All'],
-                ['paired', 'Paired'],
-                ['unpaired', 'Unpaired'],
-              ] as const
-            ).map(([k, label]) => (
-              <button
-                key={k}
-                type="button"
-                className="btn sm"
-                aria-pressed={pairing === k}
-                onClick={() => setPairing(k)}
-              >
-                {label}
-              </button>
+        <VSearch
+          query={query}
+          onQuery={setQuery}
+          open={advanced}
+          onOpen={setAdvanced}
+          match={match}
+          onMatch={setMatch}
+          terms={terms}
+          onTerms={setTerms}
+          targets={targets}
+          projects={projects}
+        />
+        {shownPanels.length ? (
+          <div className="facet">
+            <h3>Registered in Luma</h3>
+            <p className="empty" style={{ margin: '0 0 8px' }}>
+              Tick one or more panels; combining them permutes their members. Or tick a custom set
+              below.
+            </p>
+            {shownPanels.map((p) => (
+              <label className="opt" key={p.id}>
+                <input
+                  type="checkbox"
+                  checked={picked.has(p.id)}
+                  onChange={(e) => togglePanel(p.id, e.target.checked)}
+                />
+                <span>
+                  {p.name}
+                  <span className="sm">
+                    {p.id} · {p.project} · {p.date}
+                  </span>
+                </span>
+                <span className="n">{p.clones.length}</span>
+              </label>
             ))}
           </div>
-        </div>
-        {panelBlock(
-          'Registered in Luma',
-          'Tick one or more panels; combining them permutes their members. Or tick a custom set below.',
-          shownPanels,
-        )}
+        ) : null}
         {selected.length ? (
           <div className="facet">
             <p className="permute">
@@ -140,33 +155,71 @@ export function VLibraryRail({
           </div>
         ) : null}
         <div className="facet vlib-hits">
-          {groups.length ? (
-            groups.map((g) => {
-              const allIn = g.items.every((v) => have.has(v.name));
-              const head = g.items[0];
-              const paired = head?.pairing === 'paired';
+          {tree.length ? (
+            tree.map((branch) => {
+              const key = branch.pairing;
+              const n = branchCount(branch);
+              const groups = branch.targets.flatMap((t) => t.groups);
               return (
-                <label className="vhit" key={g.clone}>
-                  <input
-                    type="checkbox"
-                    checked={allIn}
-                    onChange={(e) => toggleClone(g.items, e.target.checked)}
+                <div className="vtree" key={key}>
+                  <FolderRow
+                    depth={1}
+                    label={branch.pairing === 'paired' ? 'Paired' : 'Unpaired'}
+                    meta={`${n} clone${n === 1 ? '' : 's'}`}
+                    open={shown(key)}
+                    onToggle={() => toggleOpen(key)}
+                    groups={groups}
+                    have={have}
+                    onCheck={(on) => toggleGroups(groups, on)}
                   />
-                  <span>
-                    <span className="vhit-h">
-                      <span className="nm">{g.clone}</span>
-                      <span className={`pill ${paired ? 'on' : ''}`}>{paired ? 'paired' : 'unpaired'}</span>
-                    </span>
-                    <span className="sm">{head?.target}</span>
-                    <div className="vhit-dom">
-                      {g.items.map((v) => (
-                        <span key={v.id} className="pill">
-                          {v.t} {v.name}
-                        </span>
-                      ))}
-                    </div>
-                  </span>
-                </label>
+                  {shown(key)
+                    ? branch.targets.map((t) => {
+                        const tkey = `${key}::${t.target}`;
+                        return (
+                          <div key={tkey}>
+                            <FolderRow
+                              depth={2}
+                              label={t.target}
+                              meta={`${t.groups.length}`}
+                              open={shown(tkey)}
+                              onToggle={() => toggleOpen(tkey)}
+                              groups={t.groups}
+                              have={have}
+                              onCheck={(on) => toggleGroups(t.groups, on)}
+                            />
+                            {shown(tkey)
+                              ? t.groups.map((g) => {
+                                  const allIn = g.items.every((v) => have.has(v.name));
+                                  return (
+                                    <label className="vtree-row d3" key={g.clone}>
+                                      <span className="vtree-chev" />
+                                      <input
+                                        type="checkbox"
+                                        checked={allIn}
+                                        onChange={(e) => toggleClone(g.items, e.target.checked)}
+                                      />
+                                      <span className="vtree-lab">
+                                        <span className="nm">{g.clone}</span>
+                                        <span className="sm">
+                                          {g.ids} · {g.project} · {g.date}
+                                        </span>
+                                        <span className="vhit-dom">
+                                          {g.items.map((v) => (
+                                            <span key={v.id} className="pill">
+                                              {v.t}
+                                            </span>
+                                          ))}
+                                        </span>
+                                      </span>
+                                    </label>
+                                  );
+                                })
+                              : null}
+                          </div>
+                        );
+                      })
+                    : null}
+                </div>
               );
             })
           ) : (
@@ -195,7 +248,7 @@ export function VLibraryRail({
             </>
           ) : (
             <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--ink-2)' }}>
-              Tick clones for a custom panel, or tick Luma panels to permute them.
+              Expand a pairing or target to tick clones, or tick Luma panels to permute them.
             </p>
           )}
           <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--ink-2)' }}>
@@ -209,4 +262,76 @@ export function VLibraryRail({
       </div>
     </aside>
   );
+}
+
+function FolderRow({
+  depth,
+  label,
+  meta,
+  open,
+  onToggle,
+  groups,
+  have,
+  onCheck,
+}: {
+  depth: 1 | 2;
+  label: string;
+  meta: string;
+  open: boolean;
+  onToggle: () => void;
+  groups: CloneGroup[];
+  have: Set<string>;
+  onCheck: (on: boolean) => void;
+}) {
+  const names = groups.flatMap((g) => g.items);
+  const allIn = names.length > 0 && names.every((v) => have.has(v.name));
+  const some = !allIn && names.some((v) => have.has(v.name));
+  return (
+    <div className={`vtree-row d${depth}`}>
+      <button
+        className="vtree-chev"
+        type="button"
+        aria-expanded={open}
+        aria-label={open ? `Collapse ${label}` : `Expand ${label}`}
+        onClick={onToggle}
+      >
+        {open ? '▾' : '▸'}
+      </button>
+      <FolderCheck checked={allIn} some={some} label={label} onChange={onCheck} />
+      <button className="vtree-lab" type="button" onClick={onToggle}>
+        <span className="nm">{label}</span>
+      </button>
+      <span className="n">{meta}</span>
+    </div>
+  );
+}
+
+function FolderCheck({
+  checked,
+  some,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  some: boolean;
+  label: string;
+  onChange: (on: boolean) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = some;
+  }, [some]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      aria-label={label}
+      onChange={(e) => onChange(e.target.checked)}
+    />
+  );
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }

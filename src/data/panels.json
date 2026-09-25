@@ -4,6 +4,8 @@
     "name": "TCE CD3 arm",
     "origin": "luma",
     "target": "CD3\u03b5",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "clones": [
       "aCD3-01",
       "aCD3-02",
@@ -43,6 +45,8 @@
     "name": "CD20 registered set",
     "origin": "luma",
     "target": "CD20",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "clones": [
       "aCD20-01",
       "aCD20-02",
@@ -62,6 +66,8 @@
     "name": "TfR1 campaign hits",
     "origin": "luma",
     "target": "TfR1",
+    "project": "TfR1 campaign",
+    "date": "2024-03-12",
     "clones": [
       "aTfR1-01",
       "aTfR1-02",
@@ -74,6 +80,8 @@
     "name": "HER2 pad export",
     "origin": "luma",
     "target": "HER2",
+    "project": "HER2 pad",
+    "date": "2023-11-08",
     "clones": [
       "aHER2-tras"
     ],
@@ -84,6 +92,8 @@
     "name": "CD3 registered parents",
     "origin": "luma",
     "target": "CD3\u03b5",
+    "project": "CD3 registered",
+    "date": "2023-09-21",
     "clones": [
       "CD3-huUCHT1",
       "aCD3-VHH-02"
@@ -95,6 +105,8 @@
     "name": "Unpaired VHH set",
     "origin": "luma",
     "target": "mixed",
+    "project": "Unpaired VHH",
+    "date": "2024-08-14",
     "clones": [
       "aALB-VHH-09",
       "aEGFR-VHH-04",

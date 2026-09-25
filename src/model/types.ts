@@ -140,6 +140,8 @@ export interface VRegion {
   pairing: Pairing;
   partner: string;
   source: string;
+  project: string;
+  date: string;
   notes: string;
 }
 
@@ -150,6 +152,8 @@ export interface VPanel {
   name: string;
   origin: PanelOrigin;
   target: string;
+  project: string;
+  date: string;
   clones: string[];
   notes: string;
 }

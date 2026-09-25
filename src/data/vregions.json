@@ -8,6 +8,8 @@
     "pairing": "paired",
     "partner": "aTfR1-01-VL",
     "source": "Geneious library",
+    "project": "TfR1 campaign",
+    "date": "2024-03-12",
     "notes": "Humanized campaign hit"
   },
   {
@@ -19,6 +21,8 @@
     "pairing": "paired",
     "partner": "aTfR1-01-VH",
     "source": "Geneious library",
+    "project": "TfR1 campaign",
+    "date": "2024-03-12",
     "notes": "Humanized campaign hit"
   },
   {
@@ -30,6 +34,8 @@
     "pairing": "paired",
     "partner": "aTfR1-02-VL",
     "source": "Geneious library",
+    "project": "TfR1 campaign",
+    "date": "2024-03-12",
     "notes": "Sibling of 01, lower affinity"
   },
   {
@@ -41,6 +47,8 @@
     "pairing": "paired",
     "partner": "aTfR1-02-VH",
     "source": "Geneious library",
+    "project": "TfR1 campaign",
+    "date": "2024-03-12",
     "notes": "Sibling of 01, lower affinity"
   },
   {
@@ -52,6 +60,8 @@
     "pairing": "paired",
     "partner": "aTfR1-03-VL",
     "source": "Geneious library",
+    "project": "TfR1 campaign",
+    "date": "2024-03-12",
     "notes": ""
   },
   {
@@ -63,6 +73,8 @@
     "pairing": "paired",
     "partner": "aTfR1-03-VH",
     "source": "Geneious library",
+    "project": "TfR1 campaign",
+    "date": "2024-03-12",
     "notes": ""
   },
   {
@@ -74,6 +86,8 @@
     "pairing": "paired",
     "partner": "aHER2-tras-VL",
     "source": "Geneious library",
+    "project": "HER2 pad",
+    "date": "2023-11-08",
     "notes": "Trastuzumab VH"
   },
   {
@@ -85,6 +99,8 @@
     "pairing": "paired",
     "partner": "aHER2-tras-VH",
     "source": "Geneious library",
+    "project": "HER2 pad",
+    "date": "2023-11-08",
     "notes": "Trastuzumab VL"
   },
   {
@@ -96,6 +112,8 @@
     "pairing": "paired",
     "partner": "CD3-huUCHT1-VL",
     "source": "Geneious library",
+    "project": "CD3 registered",
+    "date": "2023-09-21",
     "notes": "Humanized UCHT1"
   },
   {
@@ -107,6 +125,8 @@
     "pairing": "paired",
     "partner": "CD3-huUCHT1-VH",
     "source": "Geneious library",
+    "project": "CD3 registered",
+    "date": "2023-09-21",
     "notes": "Humanized UCHT1"
   },
   {
@@ -118,6 +138,8 @@
     "pairing": "paired",
     "partner": "aPD1-01-VL",
     "source": "Campaign plate",
+    "project": "PD-1 campaign",
+    "date": "2024-06-04",
     "notes": ""
   },
   {
@@ -129,6 +151,8 @@
     "pairing": "paired",
     "partner": "aPD1-01-VH",
     "source": "Campaign plate",
+    "project": "PD-1 campaign",
+    "date": "2024-06-04",
     "notes": ""
   },
   {
@@ -140,6 +164,8 @@
     "pairing": "unpaired",
     "partner": "",
     "source": "Geneious library",
+    "project": "Common LC",
+    "date": "2024-01-18",
     "notes": "Fixed germline VL used as a common light chain"
   },
   {
@@ -151,6 +177,8 @@
     "pairing": "unpaired",
     "partner": "",
     "source": "Geneious library",
+    "project": "Unpaired VHH",
+    "date": "2024-02-27",
     "notes": "Half-life VHH"
   },
   {
@@ -162,6 +190,8 @@
     "pairing": "unpaired",
     "partner": "",
     "source": "Geneious library",
+    "project": "Unpaired VHH",
+    "date": "2024-02-27",
     "notes": ""
   },
   {
@@ -173,6 +203,8 @@
     "pairing": "unpaired",
     "partner": "",
     "source": "Campaign plate",
+    "project": "TCE CD3",
+    "date": "2024-08-14",
     "notes": "Unpaired CD3 VHH, no light chain"
   },
   {
@@ -184,6 +216,8 @@
     "pairing": "unpaired",
     "partner": "",
     "source": "Geneious library",
+    "project": "Unpaired VHH",
+    "date": "2024-02-27",
     "notes": ""
   },
   {
@@ -195,6 +229,8 @@
     "pairing": "unpaired",
     "partner": "",
     "source": "Campaign plate",
+    "project": "HER2 pad",
+    "date": "2024-05-16",
     "notes": "Heavy only; pair not recovered"
   },
   {
@@ -206,6 +242,8 @@
     "pairing": "unpaired",
     "partner": "",
     "source": "Geneious library",
+    "project": "Cytokine payloads",
+    "date": "2024-04-09",
     "notes": "Cytokine payload for Fc fusions"
   },
   {
@@ -217,6 +255,8 @@
     "pairing": "paired",
     "partner": "aMSLN-01-VL",
     "source": "Geneious library",
+    "project": "MSLN campaign",
+    "date": "2024-07-22",
     "notes": ""
   },
   {
@@ -228,6 +268,8 @@
     "pairing": "paired",
     "partner": "aMSLN-01-VH",
     "source": "Geneious library",
+    "project": "MSLN campaign",
+    "date": "2024-07-22",
     "notes": ""
   },
   {
@@ -239,6 +281,8 @@
     "pairing": "paired",
     "partner": "aCD3-01-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -250,6 +294,8 @@
     "pairing": "paired",
     "partner": "aCD3-01-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -261,6 +307,8 @@
     "pairing": "paired",
     "partner": "aCD3-02-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -272,6 +320,8 @@
     "pairing": "paired",
     "partner": "aCD3-02-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -283,6 +333,8 @@
     "pairing": "paired",
     "partner": "aCD3-03-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -294,6 +346,8 @@
     "pairing": "paired",
     "partner": "aCD3-03-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -305,6 +359,8 @@
     "pairing": "paired",
     "partner": "aCD3-04-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -316,6 +372,8 @@
     "pairing": "paired",
     "partner": "aCD3-04-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -327,6 +385,8 @@
     "pairing": "paired",
     "partner": "aCD3-05-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -338,6 +398,8 @@
     "pairing": "paired",
     "partner": "aCD3-05-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -349,6 +411,8 @@
     "pairing": "paired",
     "partner": "aCD3-06-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -360,6 +424,8 @@
     "pairing": "paired",
     "partner": "aCD3-06-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -371,6 +437,8 @@
     "pairing": "paired",
     "partner": "aCD3-07-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -382,6 +450,8 @@
     "pairing": "paired",
     "partner": "aCD3-07-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -393,6 +463,8 @@
     "pairing": "paired",
     "partner": "aCD3-08-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -404,6 +476,8 @@
     "pairing": "paired",
     "partner": "aCD3-08-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -415,6 +489,8 @@
     "pairing": "paired",
     "partner": "aCD3-09-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -426,6 +502,8 @@
     "pairing": "paired",
     "partner": "aCD3-09-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -437,6 +515,8 @@
     "pairing": "paired",
     "partner": "aCD3-10-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -448,6 +528,8 @@
     "pairing": "paired",
     "partner": "aCD3-10-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-01-15",
     "notes": "Registered in Luma"
   },
   {
@@ -459,6 +541,8 @@
     "pairing": "paired",
     "partner": "aCD3-11-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -470,6 +554,8 @@
     "pairing": "paired",
     "partner": "aCD3-11-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -481,6 +567,8 @@
     "pairing": "paired",
     "partner": "aCD3-12-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -492,6 +580,8 @@
     "pairing": "paired",
     "partner": "aCD3-12-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -503,6 +593,8 @@
     "pairing": "paired",
     "partner": "aCD3-13-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -514,6 +606,8 @@
     "pairing": "paired",
     "partner": "aCD3-13-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -525,6 +619,8 @@
     "pairing": "paired",
     "partner": "aCD3-14-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -536,6 +632,8 @@
     "pairing": "paired",
     "partner": "aCD3-14-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -547,6 +645,8 @@
     "pairing": "paired",
     "partner": "aCD3-15-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -558,6 +658,8 @@
     "pairing": "paired",
     "partner": "aCD3-15-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -569,6 +671,8 @@
     "pairing": "paired",
     "partner": "aCD3-16-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -580,6 +684,8 @@
     "pairing": "paired",
     "partner": "aCD3-16-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -591,6 +697,8 @@
     "pairing": "paired",
     "partner": "aCD3-17-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -602,6 +710,8 @@
     "pairing": "paired",
     "partner": "aCD3-17-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -613,6 +723,8 @@
     "pairing": "paired",
     "partner": "aCD3-18-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -624,6 +736,8 @@
     "pairing": "paired",
     "partner": "aCD3-18-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -635,6 +749,8 @@
     "pairing": "paired",
     "partner": "aCD3-19-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -646,6 +762,8 @@
     "pairing": "paired",
     "partner": "aCD3-19-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -657,6 +775,8 @@
     "pairing": "paired",
     "partner": "aCD3-20-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -668,6 +788,8 @@
     "pairing": "paired",
     "partner": "aCD3-20-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-06",
     "notes": "Registered in Luma"
   },
   {
@@ -679,6 +801,8 @@
     "pairing": "paired",
     "partner": "aCD3-21-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -690,6 +814,8 @@
     "pairing": "paired",
     "partner": "aCD3-21-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -701,6 +827,8 @@
     "pairing": "paired",
     "partner": "aCD3-22-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -712,6 +840,8 @@
     "pairing": "paired",
     "partner": "aCD3-22-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -723,6 +853,8 @@
     "pairing": "paired",
     "partner": "aCD3-23-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -734,6 +866,8 @@
     "pairing": "paired",
     "partner": "aCD3-23-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -745,6 +879,8 @@
     "pairing": "paired",
     "partner": "aCD3-24-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -756,6 +892,8 @@
     "pairing": "paired",
     "partner": "aCD3-24-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -767,6 +905,8 @@
     "pairing": "paired",
     "partner": "aCD3-25-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -778,6 +918,8 @@
     "pairing": "paired",
     "partner": "aCD3-25-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -789,6 +931,8 @@
     "pairing": "paired",
     "partner": "aCD3-26-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -800,6 +944,8 @@
     "pairing": "paired",
     "partner": "aCD3-26-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -811,6 +957,8 @@
     "pairing": "paired",
     "partner": "aCD3-27-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -822,6 +970,8 @@
     "pairing": "paired",
     "partner": "aCD3-27-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -833,6 +983,8 @@
     "pairing": "paired",
     "partner": "aCD3-28-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -844,6 +996,8 @@
     "pairing": "paired",
     "partner": "aCD3-28-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -855,6 +1009,8 @@
     "pairing": "paired",
     "partner": "aCD3-29-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -866,6 +1022,8 @@
     "pairing": "paired",
     "partner": "aCD3-29-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -877,6 +1035,8 @@
     "pairing": "paired",
     "partner": "aCD3-30-VL",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -888,6 +1048,8 @@
     "pairing": "paired",
     "partner": "aCD3-30-VH",
     "source": "Luma",
+    "project": "TCE CD3",
+    "date": "2025-02-28",
     "notes": "Registered in Luma"
   },
   {
@@ -899,6 +1061,8 @@
     "pairing": "paired",
     "partner": "aCD20-01-VL",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-03",
     "notes": "Registered in Luma"
   },
   {
@@ -910,6 +1074,8 @@
     "pairing": "paired",
     "partner": "aCD20-01-VH",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-03",
     "notes": "Registered in Luma"
   },
   {
@@ -921,6 +1087,8 @@
     "pairing": "paired",
     "partner": "aCD20-02-VL",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-03",
     "notes": "Registered in Luma"
   },
   {
@@ -932,6 +1100,8 @@
     "pairing": "paired",
     "partner": "aCD20-02-VH",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-03",
     "notes": "Registered in Luma"
   },
   {
@@ -943,6 +1113,8 @@
     "pairing": "paired",
     "partner": "aCD20-03-VL",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-03",
     "notes": "Registered in Luma"
   },
   {
@@ -954,6 +1126,8 @@
     "pairing": "paired",
     "partner": "aCD20-03-VH",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-03",
     "notes": "Registered in Luma"
   },
   {
@@ -965,6 +1139,8 @@
     "pairing": "paired",
     "partner": "aCD20-04-VL",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-03",
     "notes": "Registered in Luma"
   },
   {
@@ -976,6 +1152,8 @@
     "pairing": "paired",
     "partner": "aCD20-04-VH",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-03",
     "notes": "Registered in Luma"
   },
   {
@@ -987,6 +1165,8 @@
     "pairing": "paired",
     "partner": "aCD20-05-VL",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-03",
     "notes": "Registered in Luma"
   },
   {
@@ -998,6 +1178,8 @@
     "pairing": "paired",
     "partner": "aCD20-05-VH",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-03",
     "notes": "Registered in Luma"
   },
   {
@@ -1009,6 +1191,8 @@
     "pairing": "paired",
     "partner": "aCD20-06-VL",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "notes": "Registered in Luma"
   },
   {
@@ -1020,6 +1204,8 @@
     "pairing": "paired",
     "partner": "aCD20-06-VH",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "notes": "Registered in Luma"
   },
   {
@@ -1031,6 +1217,8 @@
     "pairing": "paired",
     "partner": "aCD20-07-VL",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "notes": "Registered in Luma"
   },
   {
@@ -1042,6 +1230,8 @@
     "pairing": "paired",
     "partner": "aCD20-07-VH",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "notes": "Registered in Luma"
   },
   {
@@ -1053,6 +1243,8 @@
     "pairing": "paired",
     "partner": "aCD20-08-VL",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "notes": "Registered in Luma"
   },
   {
@@ -1064,6 +1256,8 @@
     "pairing": "paired",
     "partner": "aCD20-08-VH",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "notes": "Registered in Luma"
   },
   {
@@ -1075,6 +1269,8 @@
     "pairing": "paired",
     "partner": "aCD20-09-VL",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "notes": "Registered in Luma"
   },
   {
@@ -1086,6 +1282,8 @@
     "pairing": "paired",
     "partner": "aCD20-09-VH",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "notes": "Registered in Luma"
   },
   {
@@ -1097,6 +1295,8 @@
     "pairing": "paired",
     "partner": "aCD20-10-VL",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "notes": "Registered in Luma"
   },
   {
@@ -1108,6 +1308,8 @@
     "pairing": "paired",
     "partner": "aCD20-10-VH",
     "source": "Luma",
+    "project": "CD20 campaign",
+    "date": "2025-03-21",
     "notes": "Registered in Luma"
   }
 ]

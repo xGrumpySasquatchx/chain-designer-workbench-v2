@@ -1,4 +1,5 @@
 import type { BuildSlot, Pairing, VPanel, VRegion, VSlot } from './types';
+import { compileSearch, searchCatalog } from './vsearch';
 
 export interface LibEntry {
   name: string;
@@ -39,7 +40,9 @@ export function taggedName(v: VRegion): string {
 }
 
 export function vregionText(v: VRegion): string {
-  return [v.name, v.clone, v.t, v.target, v.pairing, v.partner, v.notes].join(' ');
+  return [v.id, v.name, v.clone, v.t, v.target, v.pairing, v.partner, v.notes, v.date, v.project].join(
+    ' ',
+  );
 }
 
 export function clonesOf(catalog: VRegion[], clones: string[]): { clone: string; items: VRegion[] }[] {
@@ -95,12 +98,7 @@ export function filterCatalog(
   query: string,
   pairing: Pairing | 'all',
 ): VRegion[] {
-  const q = query.trim().toLowerCase();
-  return catalog.filter((v) => {
-    if (pairing !== 'all' && v.pairing !== pairing) return false;
-    if (q && !vregionText(v).toLowerCase().includes(q)) return false;
-    return true;
-  });
+  return searchCatalog(catalog, compileSearch(query, [], 'all'), pairing);
 }
 
 export function groupCatalog(rows: VRegion[]): { clone: string; items: VRegion[] }[] {

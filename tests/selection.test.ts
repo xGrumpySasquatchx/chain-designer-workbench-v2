@@ -4,6 +4,7 @@ import seedJson from '../src/data/seed.json';
 import vregionsJson from '../src/data/vregions.json';
 import panelsJson from '../src/data/panels.json';
 import { addToLibrary, applyPanels, filterCatalog, permuteCount, removeFromLibrary, variantList, vregionText } from '../src/model/library';
+import { compileSearch, panelMatches, searchCatalog, treeCatalog } from '../src/model/vsearch';
 import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
 import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
 import { emptySel, resolve, sortedIds } from '../src/model/selection';
@@ -197,6 +198,50 @@ check(
 check(
   'catalog search text does not carry a library source tag',
   catalog.every((v) => !vregionText(v).includes('Geneious')),
+);
+check('every V region has a project and a date', catalog.every((v) => !!v.project && /^\d{4}-\d{2}-\d{2}$/.test(v.date)));
+check('every panel has a project and a date', panels.every((p) => !!p.project && /^\d{4}-\d{2}-\d{2}$/.test(p.date)));
+
+const byId = searchCatalog(catalog, compileSearch('id:VR-001', [], 'all'));
+check(
+  'id search keeps the paired partner with the hit',
+  byId.some((v) => v.name === 'aTfR1-01-VH') && byId.some((v) => v.name === 'aTfR1-01-VL') && byId.length === 2,
+);
+check(
+  'target field search finds CD3ε',
+  searchCatalog(catalog, compileSearch('target:CD3', [], 'all')).some((v) => v.target === 'CD3ε'),
+);
+check(
+  'project field search finds the TCE CD3 set',
+  searchCatalog(catalog, compileSearch('project:TCE', [], 'all')).every((v) => v.project === 'TCE CD3') &&
+    searchCatalog(catalog, compileSearch('project:TCE', [], 'all')).length === 61,
+);
+const after = searchCatalog(catalog, compileSearch('date:>=2025-03-01', [], 'all'));
+check(
+  'date after March 2025 is the later CD20 set',
+  after.length > 0 && after.every((v) => v.date >= '2025-03-01' && v.project === 'CD20 campaign'),
+);
+const anyQ = compileSearch('', [
+  { id: 'a', field: 'target', op: 'contains', value: 'HER2' },
+  { id: 'b', field: 'project', op: 'contains', value: 'TfR1' },
+], 'any');
+check(
+  'match-any combines target HER2 or project TfR1',
+  searchCatalog(catalog, anyQ).some((v) => v.target === 'HER2') &&
+    searchCatalog(catalog, anyQ).some((v) => v.project === 'TfR1 campaign'),
+);
+check(
+  'panel search by id and project',
+  panelMatches(panels[0]!, compileSearch('id:PN-BG-CD3', [], 'all')) &&
+    panelMatches(panels.find((p) => p.id === 'PN-LU-TFR1')!, compileSearch('project:TfR1', [], 'all')),
+);
+const tree = treeCatalog(catalog);
+check(
+  'tree splits paired and unpaired and groups by target',
+  tree[0]?.pairing === 'paired' &&
+    tree[1]?.pairing === 'unpaired' &&
+    (tree[0]?.targets[0]?.groups.length ?? 0) >= 10 &&
+    tree[1]?.targets.some((t) => t.groups.some((g) => g.items[0]?.t === 'VHH')),
 );
 
 const cd3cd20 = applyPanels(catalog, panels, ['PN-BG-CD3', 'PN-LU-CD20'], []);
