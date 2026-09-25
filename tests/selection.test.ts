@@ -7,7 +7,7 @@ import { addToLibrary, applyPanels, filterCatalog, permuteCount, removeFromLibra
 import { compileSearch, panelMatches, searchCatalog, treeCatalog } from '../src/model/vsearch';
 import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
 import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
-import { emptySel, resolve, sortedIds } from '../src/model/selection';
+import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
 import { slotsFor } from '../src/model/slots';
 import type { InventoryBook, Mutation, Seed, Sel, VPanel, VRegion } from '../src/model/types';
 
@@ -278,5 +278,53 @@ check(
   'KiH common-LC format claims knob and hole, not a stray mAb heavy',
   kihClc.buildC.has('CH-02') && kihClc.buildC.has('CH-03') && !kihClc.reachC.has('CH-01'),
 );
+
+const twoPlasmidKih = matchingIds(
+  seed.formats,
+  {
+    cls: new Set(['MsAb']),
+    spec: new Set(['Bispecific']),
+    kih: new Set(['Present']),
+    fc: new Set(['Yes']),
+    plasmids: new Set(['2']),
+  },
+  '',
+  (f) => f.id,
+);
+check('MsAb KiH Fc two-plasmid focus is the scFv-Fc heterodimer', [...twoPlasmidKih].join() === 'F-036');
+const two = resolve(seed, emptySel(), { formats: twoPlasmidKih });
+check(
+  'that focus offers both scFv-Fc arms as chain picks',
+  two.reachC.has('CH-31') && two.reachC.has('CH-32') && two.reachC.size === 2,
+  [...two.reachC].sort().join(','),
+);
+check(
+  'that focus offers both scFv-Fc plasmids',
+  two.reachV.has('pDM-scFvFc-IgG1-KNOB-LALAPG') && two.reachV.has('pDM-scFvFc-IgG1-HOLE-LALAPG'),
+);
+const scfvFc = resolve(seed, selWith((s) => { s.fmt['F-036'] = 'in'; }));
+check(
+  'including the two-plasmid KiH scFv-Fc claims both arms and both plasmids',
+  scfvFc.buildC.has('CH-31') && scfvFc.buildC.has('CH-32') && scfvFc.buildV.size === 2,
+);
+check('that format has V slots to assign', slotsFor(seed, 'F-036').length === 4, String(slotsFor(seed, 'F-036').length));
+
+const dart = resolve(seed, selWith((s) => { s.fmt['F-033'] = 'in'; }));
+check(
+  'DART demo claims both chains and both plasmids',
+  dart.buildC.has('CH-29') && dart.buildC.has('CH-30') && dart.buildV.has('pDM-DART-A') && dart.buildV.has('pDM-DART-B'),
+);
+
+for (const cls of [...new Set(seed.formats.map((f) => f.cls))].sort()) {
+  const f = seed.formats.find((x) => x.cls === cls);
+  if (!f) continue;
+  const m = resolve(seed, selWith((s) => { s.fmt[f.id] = 'in'; }));
+  const nSlots = slotsFor(seed, f.id).length;
+  check(
+    `${cls} demo (${f.id}) walks chains, plasmids, and V slots`,
+    m.buildC.size > 0 && m.buildV.size > 0 && nSlots > 0,
+    `chains ${[...m.buildC].join(',')} plasmids ${m.buildV.size} slots ${nSlots}`,
+  );
+}
 
 console.log('\nAll selection checks passed.');

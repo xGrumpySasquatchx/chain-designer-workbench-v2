@@ -56,6 +56,30 @@
       "plasmidUg": 62,
       "glycerolStock": true
     },
+    "CH-30": {
+      "location": "Freezer A / rack 1 / box 4",
+      "position": "C2",
+      "volumeUl": 80,
+      "concentrationNgUl": 360,
+      "plasmidUg": 29,
+      "glycerolStock": false
+    },
+    "CH-31": {
+      "location": "Freezer A / rack 1 / box 3",
+      "position": "B5",
+      "volumeUl": 120,
+      "concentrationNgUl": 390,
+      "plasmidUg": 47,
+      "glycerolStock": true
+    },
+    "CH-32": {
+      "location": "Freezer A / rack 1 / box 3",
+      "position": "B6",
+      "volumeUl": 40,
+      "concentrationNgUl": 280,
+      "plasmidUg": 11,
+      "glycerolStock": false
+    },
     "CH-26": {
       "location": "Freezer C / rack 1 / box 2",
       "position": "E8",
@@ -153,6 +177,38 @@
       "concentrationNgUl": 500,
       "plasmidUg": 105,
       "glycerolStock": true
+    },
+    "pDM-DART-A": {
+      "location": "Freezer A / rack 1 / box 4",
+      "position": "C1",
+      "volumeUl": 90,
+      "concentrationNgUl": 340,
+      "plasmidUg": 31,
+      "glycerolStock": false
+    },
+    "pDM-DART-B": {
+      "location": "Freezer A / rack 1 / box 4",
+      "position": "C2",
+      "volumeUl": 80,
+      "concentrationNgUl": 360,
+      "plasmidUg": 29,
+      "glycerolStock": false
+    },
+    "pDM-scFvFc-IgG1-KNOB-LALAPG": {
+      "location": "Freezer A / rack 1 / box 3",
+      "position": "B5",
+      "volumeUl": 120,
+      "concentrationNgUl": 390,
+      "plasmidUg": 47,
+      "glycerolStock": true
+    },
+    "pDM-scFvFc-IgG1-HOLE-LALAPG": {
+      "location": "Freezer A / rack 1 / box 3",
+      "position": "B6",
+      "volumeUl": 40,
+      "concentrationNgUl": 280,
+      "plasmidUg": 11,
+      "glycerolStock": false
     },
     "pDM-VHHFc-IgG1-LALAPG": {
       "location": "Freezer A / rack 1 / box 5",

@@ -252,6 +252,16 @@ function withStock<T extends { id: string }>(rows: T[], book: InventoryBook['cha
   return rows.map((r) => ({ ...r, stock: stockStatus(book[r.id]) })) as unknown as Row[];
 }
 
+function pruneFacetSel(facetSel: Record<string, Set<string>>, rows: Row[]): Record<string, Set<string>> {
+  const next: Record<string, Set<string>> = {};
+  for (const [k, set] of Object.entries(facetSel)) {
+    if (!set?.size) continue;
+    const keep = new Set([...set].filter((v) => rows.some((r) => String(r[k] ?? '') === v)));
+    if (keep.size) next[k] = keep;
+  }
+  return next;
+}
+
 export default function App() {
   const [state, setState] = useState(defaultState);
   const [query, setQuery] = useState<Record<Grain, string>>({
@@ -349,6 +359,7 @@ export default function App() {
         : grain === 'mut'
           ? [r.id, r.name, r.purpose, r.positions, r.domain, r.carried, r.notes, r.partner].join(' ')
           : [r.id, r.role, r.insert, r.module, r.eng, r.note, r.sel, r.stock].join(' ');
+  const liveFacets = grain === 'fmt' ? facetSel.fmt : pruneFacetSel(facetSel[grain] ?? {}, railRows);
 
   return (
     <>
@@ -404,7 +415,7 @@ export default function App() {
             title="Narrow the list"
             facets={facets}
             rows={railRows}
-            facetSel={facetSel[grain]}
+            facetSel={liveFacets}
             query={query[grain] ?? ''}
             onQuery={(q) => setQuery((qs) => ({ ...qs, [grain]: q }))}
             onToggle={(key, value, on) => {
@@ -448,7 +459,7 @@ export default function App() {
             model={model}
             marks={grain === 'mut' ? state.sel.mut : grain === 'fmt' || grain === 'chn' || grain === 'con' ? state.sel[grain] : {}}
             query={query[grain] ?? ''}
-            facetSel={facetSel[grain]}
+            facetSel={liveFacets}
             hideOut={state.hideOut}
             text={text}
             onMark={(id, v) => {
