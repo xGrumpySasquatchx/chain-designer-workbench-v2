@@ -10,7 +10,7 @@ import { applyMutations, mutationRelevant, specificVectorIds } from '../src/mode
 import { EMPTY_DESIGN, joinCTerm, matchFormat, removeCTerm, setBlockTarget } from '../src/model/design';
 import { archetypeIdsOf, assembleBook, chainUid, registerRequest } from '../src/model/luma';
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
-import { slotsFor } from '../src/model/slots';
+import { buildSlots, slotsFor } from '../src/model/slots';
 import { facetTokens, rowHasFacet } from '../src/model/facets';
 import type { InventoryBook, Mutation, Seed, Sel, VPanel, VRegion } from '../src/model/types';
 
@@ -87,6 +87,20 @@ check(
   'an ambiguous chain add claims nothing',
   sortedIds(m4.buildV).join(',') === 'pDM-HC-IgG1-WT,pDM-LC-kappa-WT' &&
     knob.every((id) => m4.reachV.has(id)),
+);
+const chainLed = resolve(
+  seed,
+  selWith((s) => {
+    s.chn['CH-01'] = 'in';
+    s.chn['CH-18'] = 'in';
+  }),
+);
+check(
+  'included chains open their variable-region slots',
+  sortedIds(chainLed.buildV).join(',') === 'pDM-HC-IgG1-WT,pDM-LC-kappa-WT' &&
+    slotsFor(seed, 'F-001').length > 0 &&
+    buildSlots(seed, chainLed.buildV).map((s) => s.t).sort().join(',') === 'VH,VL',
+  buildSlots(seed, chainLed.buildV).map((s) => s.t).join(','),
 );
 const m4b = resolve(
   seed,

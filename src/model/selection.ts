@@ -104,7 +104,18 @@ export function resolve(seed: Seed, sel: Sel, focus?: { formats?: Set<string> })
     );
   inC.forEach((c) => {
     const opts = (byChain[c]?.vectors ?? []).filter((v) => byVec[v] && !outV.has(v));
-    if (opts.length === 1) claimV.add(opts[0]);
+    if (!opts.length) return;
+    if (opts.length === 1) {
+      claimV.add(opts[0]);
+      return;
+    }
+    // A format already names its plasmids. An extra chain stays a choice until one is picked.
+    if (inF.size) return;
+    const ranked = opts
+      .map((id) => ({ id, rank: byVec[id].rank || 999 }))
+      .sort((a, b) => a.rank - b.rank || a.id.localeCompare(b.id));
+    const best = ranked[0].rank;
+    ranked.filter((row) => row.rank === best).forEach((row) => claimV.add(row.id));
   });
   const buildV = new Set([...claimV, ...inV]);
 
