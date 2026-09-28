@@ -51,6 +51,7 @@ export function resolve(seed: Seed, sel: Sel, focus?: { formats?: Set<string> })
   let pf = seed.formats.filter((f) => !outF.has(f.id));
   if (inF.size) pf = pf.filter((f) => inF.has(f.id));
   else if (focused) pf = pf.filter((f) => focus!.formats!.has(f.id));
+  if (focused && inF.size) pf = pf.filter((f) => focus!.formats!.has(f.id));
 
   const chainPool = new Set<string>();
   pf.forEach((f) => f.chains.forEach((c) => chainPool.add(c)));

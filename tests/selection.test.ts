@@ -7,6 +7,8 @@ import { addToLibrary, applyClones, applyPanels, filterCatalog, insertsByVector,
 import { compileSearch, panelMatches, searchCatalog, treeCatalog } from '../src/model/vsearch';
 import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
 import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
+import { EMPTY_DESIGN, matchFormat } from '../src/model/design';
+import { archetypeIdsOf, assembleBook, chainUid, registerRequest } from '../src/model/luma';
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
 import { slotsFor } from '../src/model/slots';
 import { facetTokens, rowHasFacet } from '../src/model/facets';
@@ -413,6 +415,98 @@ check(
 check(
   'slash-space numbering splits IMGT without breaking n/a',
   facetTokens('Kabat / IMGT').join() === 'Kabat,IMGT',
+);
+
+const book = assembleBook(seed, inventory, mutations, panels, {
+  requests: [],
+  panels: [],
+  molecules: [],
+});
+const formatIds = new Set(book.molecules.map((m) => m.formatId));
+check(
+  'every format is a molecule in a Luma panel',
+  seed.formats.every((f) => formatIds.has(f.id)) && book.panels.length > 0,
+  `${book.molecules.length} molecules in ${book.panels.length} panels`,
+);
+check(
+  'every chain and construct shares the panel graph',
+  seed.chains.every((c) => book.chains.some((l) => l.archetypeId === c.id && l.moleculeIds.length > 0)) &&
+    seed.vectors.every((v) => book.constructs.some((c) => c.id === v.id && c.chainIds.length > 0)),
+);
+check(
+  'every mutation is carried by a construct',
+  mutations.every((m) => book.constructs.some((c) => c.mutationIds.includes(m.id))),
+);
+check(
+  'variable-region libraries attach to a panel that needs them',
+  panels.every((p) => book.panels.some((panel) => panel.libraryIds.includes(p.id))),
+);
+const igg = book.panels.find((p) => p.name === 'IgG mAb');
+const iggChains = igg ? [...(archetypeIdsOf(book, igg.id) ?? [])] : [];
+const iggFams = new Set(iggChains.map((id) => seed.chains.find((c) => c.id === id)?.fam));
+check(
+  'an IgG panel only offers heavy and light chains',
+  !!igg &&
+    iggChains.includes('CH-01') &&
+    iggChains.includes('CH-18') &&
+    iggFams.size === 2 &&
+    iggFams.has('Heavy') &&
+    iggFams.has('Light'),
+  [...iggFams].join(','),
+);
+const vhh = book.panels.find((p) => p.formatIds.includes('F-048'));
+const vhhChains = vhh ? [...(archetypeIdsOf(book, vhh.id) ?? [])] : [];
+check(
+  'a VHH panel does not offer a conventional Fab chain',
+  !!vhh && vhhChains.includes('CH-35') && !vhhChains.includes('CH-01') && !vhhChains.includes('CH-18'),
+);
+const fabDesign = {
+  ...EMPTY_DESIGN,
+  left: 'fab' as const,
+  right: 'fab' as const,
+  fc: 'homofc' as const,
+  light: 'common' as const,
+  targets: ['HER2', 'HER2'] as [string, string],
+};
+const matched = matchFormat(seed, fabDesign);
+check('a Fab / Homo-Fc design matches wild-type IgG', matched?.id === 'F-001', matched?.id);
+const kappa = book.chains.find((c) => c.id === chainUid('CH-18'));
+check(
+  'the conventional kappa light chain is a reusable reagent construct',
+  !!kappa && kappa.role === 'reagent' && kappa.constructId === 'pDM-LC-kappa-WT' && kappa.moleculeIds.length > 4,
+  `${kappa?.constructId} · ${kappa?.moleculeIds.length}`,
+);
+const focused = resolve(seed, emptySel(), igg ? { formats: new Set(igg.formatIds) } : undefined);
+check(
+  'selecting the IgG panel hides VHH, scFv, and mutein chains',
+  focused.reachC.has('CH-01') &&
+    focused.reachC.has('CH-18') &&
+    !focused.reachC.has('CH-35') &&
+    !focused.reachC.has('CH-27') &&
+    !focused.reachC.has('CH-39'),
+);
+
+const minted = registerRequest(
+  book,
+  {
+    id: 'REQ-R001',
+    name: 'HER2 IgG',
+    createdAt: '2026-09-28',
+    status: 'draft',
+    panelId: null,
+    drafts: [{ id: 'd1', name: 'HER2 IgG', design: fabDesign, formatId: 'F-001' }],
+  },
+  seed,
+);
+check(
+  'registering a request mints connected panel, molecule, and chain UIDs',
+  !!minted &&
+    minted.panel.id === 'PN-R001' &&
+    minted.molecules[0].id === 'MOL-R1-1' &&
+    minted.molecules[0].chainIds.includes(chainUid('CH-18')) &&
+    minted.molecules[0].chainIds.includes(chainUid('CH-01')) &&
+    !minted.molecules[0].chainIds.includes(chainUid('CH-19')),
+  minted?.molecules[0].chainIds.join(','),
 );
 
 console.log('\nAll selection checks passed.');

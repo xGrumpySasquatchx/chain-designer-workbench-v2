@@ -2,11 +2,11 @@ import { buildSlots } from '../model/slots';
 import type { Grain, Model, Seed } from '../model/types';
 
 const STEPS: { g: Grain; lvl: string; name: string }[] = [
-  { g: 'fmt', lvl: '1', name: 'Format' },
-  { g: 'chn', lvl: '2', name: 'Chain' },
-  { g: 'var', lvl: '3', name: 'Variable regions' },
-  { g: 'mut', lvl: '4', name: 'Mutations' },
-  { g: 'con', lvl: '5', name: 'Construct' },
+  { g: 'fmt', lvl: '', name: 'Request' },
+  { g: 'chn', lvl: '1', name: 'Chain' },
+  { g: 'var', lvl: '2', name: 'Variable regions' },
+  { g: 'mut', lvl: '3', name: 'Mutations' },
+  { g: 'con', lvl: '4', name: 'Construct' },
 ];
 
 export function LevelTabs({
@@ -14,17 +14,19 @@ export function LevelTabs({
   model,
   seed,
   builds,
+  requestCount,
   onGrain,
 }: {
   grain: Grain;
   model: Model;
   seed: Seed;
   builds: number;
+  requestCount: string;
   onGrain: (g: Grain) => void;
 }) {
   const slots = buildSlots(seed, model.buildV).length;
   const counts: Record<Grain, string> = {
-    fmt: `${model.reachF.size} of ${seed.formats.length}`,
+    fmt: requestCount,
     chn: `${model.buildC.size} / ${model.reachC.size}`,
     var: `${slots} slot${slots === 1 ? '' : 's'}${builds ? ` · ${builds}` : ''}`,
     mut: `${model.buildM.size} / ${model.reachM.size}`,
@@ -44,10 +46,10 @@ export function LevelTabs({
           onClick={() => onGrain(s.g)}
         >
           <span className="tool-head">
-            <span className="tool-lvl">{s.lvl}</span>
+            {s.lvl ? <span className="tool-lvl">{s.lvl}</span> : null}
             <span className="tool-nm">{s.name}</span>
           </span>
-          <span className="tool-ct">{counts[s.g]}</span>
+          <span className={`tool-ct${s.lvl ? '' : ' plain'}`}>{counts[s.g]}</span>
         </button>
       ))}
     </div>

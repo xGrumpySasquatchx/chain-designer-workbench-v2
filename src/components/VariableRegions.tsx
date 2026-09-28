@@ -31,7 +31,7 @@ export function VariableRegions({
           <span className="count">0 slots</span>
         </div>
         <div style={{ padding: '18px 13px', color: 'var(--ink-3)', fontSize: 13 }}>
-          No variable domains needed yet. Include a format on Level 1 and its V slots appear here.
+          No variable domains needed yet. Include a chain on Level 1 and its V slots appear here.
         </div>
       </main>
     );

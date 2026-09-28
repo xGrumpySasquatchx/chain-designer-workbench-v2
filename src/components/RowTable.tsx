@@ -55,6 +55,7 @@ export function RowTable({
   facetSel,
   hideOut,
   text,
+  notice,
   onMark,
   onHideOut,
 }: {
@@ -68,6 +69,7 @@ export function RowTable({
   facetSel: Record<string, Set<string>>;
   hideOut: boolean;
   text: (row: Row) => string;
+  notice?: string;
   onMark: (id: string, v: Mark) => void;
   onHideOut: () => void;
 }) {
@@ -124,16 +126,16 @@ export function RowTable({
     if (it.b === 2 && s !== 'out') {
       status =
         grain === 'chn' ? (
-          <span className="pill blk">No format in play uses this</span>
+          <span className="pill blk">Not on this panel</span>
         ) : grain === 'con' ? (
           <span className="pill blk">No chain in play needs this</span>
         ) : grain === 'mut' ? (
-          <span className="pill blk">Not used by the current format</span>
+          <span className="pill blk">Not used by this panel</span>
         ) : (
           <span className="pill blk">Blocked by a rule-out</span>
         );
     } else if (claimed && s !== 'in') {
-      status = <span className="pill imp">Comes with your format</span>;
+      status = <span className="pill imp">Comes with the panel</span>;
     } else if (grain === 'mut' && it.r.partner && it.r.partner !== 'None' && s !== 'out' && it.b < 2) {
       status = <span className="pill on">Needs {String(it.r.partner)}</span>;
     }
@@ -231,7 +233,7 @@ export function RowTable({
             ) : (
               <tr>
                 <td colSpan={ncol} style={{ padding: '14px 13px', color: 'var(--ink-3)' }}>
-                  Nothing matches those filters.
+                  {notice ?? 'Nothing matches those filters.'}
                 </td>
               </tr>
             )}

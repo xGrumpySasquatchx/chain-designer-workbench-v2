@@ -8,13 +8,20 @@ const PILL: Record<string, string> = {
   'Not made': '',
 };
 
-export function InventoryCell({ record }: { record: InventoryRecord | undefined }) {
+export function InventoryCell({
+  record,
+  note,
+}: {
+  record: InventoryRecord | undefined;
+  note?: string;
+}) {
   const status = stockStatus(record);
   return (
     <>
       <span className={`pill ${PILL[status]}`.trim()}>{status}</span>
       <span className="sm">{stockLine(record)}</span>
       {status !== 'Not made' ? <span className="sm">{locationLine(record)}</span> : null}
+      {note ? <span className="sm">{note}</span> : null}
     </>
   );
 }

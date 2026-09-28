@@ -17,6 +17,7 @@ function SelectionFolders({
   assign,
   library,
   mutations,
+  requestItems,
 }: {
   seed: Seed;
   model: Model;
@@ -24,6 +25,7 @@ function SelectionFolders({
   assign: Record<string, Record<string, string>>;
   library: string;
   mutations: Mutation[];
+  requestItems?: { id: string; label: string; note: string }[];
 }) {
   const [open, setOpen] = useState<Set<string>>(
     () => new Set(['fmt', 'chn', 'var', 'mut', 'con']),
@@ -55,16 +57,18 @@ function SelectionFolders({
   }[] = [
     {
       k: 'fmt',
-      name: 'Format',
-      empty: 'Include a format on Level 1.',
-      items: seed.formats
-        .filter((f) => model.inF.has(f.id))
-        .map((f) => ({ id: f.id, label: f.name, note: f.id })),
+      name: 'Request',
+      empty: 'Register a panel, then open it on Level 1.',
+      items: requestItems?.length
+        ? requestItems
+        : seed.formats
+            .filter((f) => model.inF.has(f.id))
+            .map((f) => ({ id: f.id, label: f.name, note: f.id })),
     },
     {
       k: 'chn',
       name: 'Chain',
-      empty: 'Chains appear once a format is in the build.',
+      empty: 'Include a chain from the panel on Level 1.',
       items: seed.chains
         .filter((c) => model.buildC.has(c.id))
         .map((c) => ({ id: c.id, label: c.name, note: c.id })),
@@ -72,7 +76,7 @@ function SelectionFolders({
     {
       k: 'var',
       name: 'Variable regions',
-      empty: 'Assign V regions on Level 3.',
+      empty: 'Assign V regions on Level 2.',
       items: vItems,
     },
     {
@@ -86,7 +90,7 @@ function SelectionFolders({
     {
       k: 'con',
       name: 'Construct',
-      empty: 'Plasmids appear once a format is in the build.',
+      empty: 'Constructs appear once a chain is in the build.',
       items: seed.vectors
         .filter((v) => model.buildV.has(v.id))
         .map((v) => ({ id: v.id, label: v.id, note: v.insert })),
@@ -128,6 +132,7 @@ export function BuildPanel({
   library,
   mutations,
   presets,
+  requestItems,
   onReset,
   onRuleOut,
   onRestore,
@@ -147,6 +152,7 @@ export function BuildPanel({
   library: string;
   mutations: Mutation[];
   presets: Preset[];
+  requestItems?: { id: string; label: string; note: string }[];
   onReset: () => void;
   onRuleOut: (id: string) => void;
   onRestore: (grain: Grain, id: string) => void;
@@ -222,6 +228,7 @@ export function BuildPanel({
             assign={assign}
             library={library}
             mutations={mutations}
+            requestItems={requestItems}
           />
           {model.conflicts.slice(0, 4).map((c) => (
             <div className="note" key={c}>
@@ -285,7 +292,7 @@ export function BuildPanel({
               })}
             </div>
           ) : (
-            <div className="empty">Include a format on Level 1 and its plasmids land here.</div>
+            <div className="empty">Include a chain on Level 1 and its constructs land here.</div>
           )}
         </div>
       ) : null}
@@ -297,7 +304,7 @@ export function BuildPanel({
               ? `${n ? `${n} build${n > 1 ? 's' : ''}` : '1 build'} x ${slots.length} V region${
                   slots.length > 1 ? 's' : ''
                 } = ${nv * slots.length} parts into ${nv * plas} assemblies.`
-              : 'Include a format first.'}
+              : 'Include a chain on Level 1 first.'}
           </p>
           <div className="row">
             <button

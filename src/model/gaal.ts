@@ -85,7 +85,7 @@ export function buildListText(
     .map((s) => s.trim())
     .filter(Boolean);
   const back = backboneIds(seed, buildV);
-  const L = ['BUILD LIST', '', 'Formats'];
+  const L = ['BUILD LIST', '', 'Requests'];
   const inf = [...inF];
   (inf.length ? inf : ['(none)']).forEach((id) => {
     const f = F[id];

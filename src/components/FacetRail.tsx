@@ -46,6 +46,7 @@ export function FacetRail({
   onFold,
   fold,
   grip,
+  lead,
 }: {
   grain?: Grain;
   title: string;
@@ -58,6 +59,7 @@ export function FacetRail({
   onFold?: () => void;
   fold?: ReactNode;
   grip?: ReactNode;
+  lead?: ReactNode;
 }) {
   const facetSig = facets.map((f) => f.k).join(',');
   const [open, setOpen] = useState<Set<string>>(() => new Set(facets.map((f) => f.k)));
@@ -85,6 +87,7 @@ export function FacetRail({
         </div>
       </div>
       <div className="rail-body">
+        {lead}
         {facets.map((f) => {
           const counts: Record<string, number> = {};
           rows.forEach((r) => {

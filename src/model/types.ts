@@ -1,5 +1,73 @@
 export type Tier = 1 | 2 | 3 | 4 | 5 | 6;
 export type Grain = 'fmt' | 'chn' | 'var' | 'mut' | 'con';
+export type ArmId = 'left' | 'right';
+export type BbKind =
+  | 'fab'
+  | 'scfab'
+  | 'xfab'
+  | 'scfv'
+  | 'vhh'
+  | 'mutein'
+  | 'miniprotein'
+  | 'denovo'
+  | 'reagent'
+  | 'tag'
+  | 'fc'
+  | 'homofc'
+  | 'heterofc'
+  | 'empty';
+export type FcKind = 'homofc' | 'heterofc' | 'none';
+export type LightMode = 'common' | 'per-arm' | 'unset';
+/** A construct reused across a panel, or one expressed for a single campaign chain. */
+export type ChainUse = 'reagent' | 'campaign';
+
+export interface PadDesign {
+  left: BbKind;
+  right: BbKind;
+  fc: FcKind;
+  light: LightMode;
+  fusedLeft: BbKind[];
+  fusedRight: BbKind[];
+  targets: [string, string];
+}
+
+export interface DraftMolecule {
+  id: string;
+  name: string;
+  design: PadDesign;
+  formatId: string | null;
+}
+
+export interface RequestDoc {
+  id: string;
+  name: string;
+  createdAt: string;
+  status: 'draft' | 'registered';
+  panelId: string | null;
+  drafts: DraftMolecule[];
+}
+
+export interface LumaPanel {
+  id: string;
+  name: string;
+  requestId: string;
+  project: string;
+  registeredAt: string;
+  moleculeIds: string[];
+  formatIds: string[];
+  chainIds: string[];
+  /** Variable-region libraries already in Luma that can fill this panel. */
+  libraryIds: string[];
+}
+
+export interface LumaMolecule {
+  id: string;
+  name: string;
+  panelId: string;
+  formatId: string;
+  chainIds: string[];
+  design: PadDesign;
+}
 export type Mark = 'in' | 'out';
 export type StockStatus = 'In stock' | 'Low' | 'Used up' | 'Not made';
 export type Pairing = 'paired' | 'unpaired';
@@ -192,6 +260,11 @@ export interface State {
   grain: Grain;
   hideOut: boolean;
   panels: string[];
+  activePanelId: string | null;
+  activeRequestId: string | null;
+  requests: RequestDoc[];
+  userPanels: LumaPanel[];
+  userMolecules: LumaMolecule[];
 }
 
 export interface Model {

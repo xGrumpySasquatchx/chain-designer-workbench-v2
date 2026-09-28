@@ -10,9 +10,22 @@ import { InventoryCell } from './components/InventoryCell';
 import { LevelTabs } from './components/LevelTabs';
 import { RowTable, type Col, type Row } from './components/RowTable';
 import { FoldBtn, ResizeGrip, useSidePanels } from './components/SidePanels';
+import { PanelPick, RequestBench, RequestRail } from './components/RequestBench';
 import { VariableRegions } from './components/VariableRegions';
 import { VLibraryRail } from './components/VLibraryRail';
+import { EMPTY_DESIGN, matchFormat } from './model/design';
 import { stockStatus } from './model/inventory';
+import {
+  archetypeIdsOf,
+  assembleBook,
+  chainByArchetype,
+  formatIdsOf,
+  newRequest,
+  panelById,
+  panelConstructIds,
+  panelMutationIds,
+  registerRequest,
+} from './model/luma';
 import { rowHasFacet } from './model/facets';
 import {
   addToLibrary,
@@ -30,11 +43,12 @@ import { emptySel, facetsActive, matchingIds, resolve } from './model/selection'
 import { buildSlots } from './model/slots';
 import type {
   Chain,
-  Format,
+  DraftMolecule,
   Grain,
   InventoryBook,
   Mark,
   Mutation,
+  PadDesign,
   Seed,
   Sel,
   Vector,
@@ -81,56 +95,18 @@ const CON_FACETS: FacetDef[] = [
   { k: 'stock', h: 'Inventory' },
 ];
 
-const FMT_COLS: Col[] = [
-  { h: 'ID', cls: 'idc', cell: (r) => String(r.id), sort: (r) => String(r.id) },
-  {
-    h: 'Format',
-    cell: (r) => (
-      <>
-        <span className="nm">{String(r.name)}</span>
-        <span className="sm">{String(r.target)}</span>
-      </>
-    ),
-    sort: (r) => String(r.name),
-  },
-  {
-    h: 'Fv content',
-    cell: (r) => (
-      <>
-        {String(r.half)} half-Fv, {String(r.full)} Fv
-        <span className="sm">
-          {String(r.trans)} in trans, {String(r.cis)} in cis
-        </span>
-      </>
-    ),
-    sort: (r) => Number(r.full) * 10 + Number(r.half),
-  },
-  {
-    h: 'Heterodimer',
-    cell: (r) =>
-      r.kih === 'Present' ? (
-        <span className="pill on">Knob-in-hole</span>
-      ) : r.chg === 'Present' ? (
-        <span className="pill on">Charge-steered</span>
-      ) : (
-        <span className="pill">Symmetric</span>
-      ),
-    sort: (r) => (r.kih === 'Present' ? 'Knob-in-hole' : r.chg === 'Present' ? 'Charge-steered' : 'Symmetric'),
-  },
-  { h: 'Plasmids', cell: (r) => <span className="mono">{String(r.plasmids)}</span>, sort: (r) => Number(r.plasmids) },
-  {
-    h: 'Build load',
-    cell: (r) => (
-      <>
-        <span className="mono">{String(r.score)}</span>
-        <span className="sm">{String(r.drivers)}</span>
-      </>
-    ),
-    sort: (r) => Number(r.score),
-  },
-];
 const CHN_COLS: Col[] = [
-  { h: 'ID', cls: 'idc', cell: (r) => String(r.id), sort: (r) => String(r.id) },
+  {
+    h: 'ID',
+    cls: 'idc',
+    cell: (r) => (
+      <>
+        <span className="mono">{String(r.luma || r.id)}</span>
+        {r.luma ? <span className="sm">{String(r.id)}</span> : null}
+      </>
+    ),
+    sort: (r) => String(r.luma || r.id),
+  },
   {
     h: 'Chain',
     cell: (r) => (
@@ -169,8 +145,13 @@ const CHN_COLS: Col[] = [
   },
   {
     h: 'Inventory',
-    cell: (r) => <InventoryCell record={inventory.chains[String(r.id)]} />,
-    sort: (r) => String(r.stock ?? ''),
+    cell: (r) => (
+      <InventoryCell
+        record={r.constructId ? inventory.constructs[String(r.constructId)] : undefined}
+        note={r.constructNote ? String(r.constructNote) : undefined}
+      />
+    ),
+    sort: (r) => String(r.constructNote ?? r.stock ?? ''),
   },
 ];
 const MUT_COLS: Col[] = [
@@ -269,8 +250,13 @@ const CON_COLS: Col[] = [
   { h: 'Protein A', cell: (r) => String(r.prota), sort: (r) => String(r.prota) },
   {
     h: 'Inventory',
-    cell: (r) => <InventoryCell record={inventory.constructs[String(r.id)]} />,
-    sort: (r) => String(r.stock ?? ''),
+    cell: (r) => (
+      <InventoryCell
+        record={inventory.constructs[String(r.id)]}
+        note={r.reuseNote ? String(r.reuseNote) : undefined}
+      />
+    ),
+    sort: (r) => String(r.reuseNote ?? r.stock ?? ''),
   },
 ];
 
@@ -328,6 +314,8 @@ export default function App() {
     mut: {},
     con: {},
   });
+  const [pad, setPad] = useState<PadDesign>(EMPTY_DESIGN);
+  const [panelQuery, setPanelQuery] = useState('');
 
   useEffect(() => {
     setState(loadState());
@@ -344,23 +332,51 @@ export default function App() {
     document.documentElement.style.setProperty('--grain-bg', `var(${bg})`);
   }, [state.grain]);
 
+  const book = useMemo(
+    () =>
+      assembleBook(seed, inventory, mutations, panelBook, {
+        requests: state.requests,
+        panels: state.userPanels,
+        molecules: state.userMolecules,
+      }),
+    [state.requests, state.userPanels, state.userMolecules],
+  );
+  const activePanel = panelById(book, state.activePanelId);
+  const panelFormats = formatIdsOf(book, state.activePanelId);
+
   const fmtFocus = useMemo(() => {
+    if (panelFormats) return panelFormats;
     if (!facetsActive(facetSel.fmt, query.fmt ?? '')) return undefined;
     return matchingIds(seed.formats, facetSel.fmt, query.fmt ?? '', (f) =>
       [f.id, f.name, f.target, f.mutset, f.notes, f.mispair, f.tier].join(' '),
     );
-  }, [facetSel.fmt, query.fmt]);
+  }, [facetSel.fmt, query.fmt, panelFormats]);
 
-  const model = useMemo(
-    () =>
-      applyMutations(
-        resolve(seed, state.sel, fmtFocus != null ? { formats: fmtFocus } : undefined),
-        seed,
-        state.sel,
-        mutations,
-      ),
-    [state.sel, fmtFocus],
-  );
+  const panelChains = archetypeIdsOf(book, state.activePanelId);
+  const panelConstructs = panelConstructIds(book, state.activePanelId);
+  const panelMutations = panelMutationIds(book, state.activePanelId);
+  const model = useMemo(() => {
+    const next = applyMutations(
+      resolve(seed, state.sel, fmtFocus != null ? { formats: fmtFocus } : undefined),
+      seed,
+      state.sel,
+      mutations,
+    );
+    const keep = (set: Set<string>, allowed: Set<string> | undefined) => {
+      if (!allowed) return;
+      for (const id of [...set]) if (!allowed.has(id)) set.delete(id);
+    };
+    keep(next.reachC, panelChains);
+    keep(next.buildC, panelChains);
+    keep(next.claimC, panelChains);
+    keep(next.reachV, panelConstructs);
+    keep(next.buildV, panelConstructs);
+    keep(next.claimV, panelConstructs);
+    keep(next.reachM, panelMutations);
+    keep(next.buildM, panelMutations);
+    keep(next.claimM, panelMutations);
+    return next;
+  }, [state.sel, fmtFocus, panelChains, panelConstructs, panelMutations]);
   const slots = useMemo(() => buildSlots(seed, model.buildV), [model.buildV]);
   const vByVec = useMemo(
     () => insertsByVector(slots, state.variants, state.assign),
@@ -385,28 +401,75 @@ export default function App() {
 
   const grain = state.grain;
   const isVar = grain === 'var';
+  const isReq = grain === 'fmt';
+  const openRequest = book.requests.find((r) => r.id === state.activeRequestId) ?? null;
   const facets =
     grain === 'fmt' ? FMT_FACETS : grain === 'chn' ? CHN_FACETS : grain === 'mut' ? MUT_FACETS : CON_FACETS;
-  const rows: Row[] =
-    grain === 'fmt'
-      ? (seed.formats as Format[] as unknown as Row[])
-      : grain === 'chn'
-        ? withStock(seed.chains as Chain[], inventory.chains)
-        : grain === 'mut'
-          ? (mutations as unknown as Row[])
-          : withStock(seed.vectors as Vector[], inventory.constructs).map((r) => ({
-              ...r,
-              vnames: (vByVec[r.id] ?? []).join(' · '),
-            }));
-  const cols = grain === 'fmt' ? FMT_COLS : grain === 'chn' ? CHN_COLS : grain === 'mut' ? MUT_COLS : CON_COLS;
-  const title =
-    grain === 'fmt'
-      ? 'Formats'
-      : grain === 'chn'
-        ? 'Chain archetypes'
-        : grain === 'mut'
-          ? 'Mutation sets'
-          : 'Destination vectors';
+  const chainRows: Row[] = withStock(seed.chains as Chain[], inventory.chains).map((r) => {
+    const link = chainByArchetype(book, r.id);
+    const role = link?.role === 'reagent' ? 'Reagent' : 'Campaign';
+    return {
+      ...r,
+      luma: link?.id ?? '',
+      constructId: link?.constructId ?? '',
+      constructNote: link
+        ? `${link.constructId ?? 'No construct'} · ${role} · ${link.moleculeIds.length} molecules`
+        : '',
+    };
+  });
+  const vectorRows: Row[] = withStock(seed.vectors as Vector[], inventory.constructs).map((r) => {
+    const link = book.constructs.find((c) => c.id === r.id);
+    const role = link?.role === 'reagent' ? 'Reagent' : 'Campaign';
+    return {
+      ...r,
+      vnames: (vByVec[r.id] ?? []).join(' · '),
+      reuseNote: link ? `${role} · ${link.moleculeIds.length} molecules · ${link.chainIds.length} chains` : '',
+    };
+  });
+  const waiting = !activePanel && (grain === 'chn' || grain === 'mut' || grain === 'con');
+  const rows: Row[] = waiting
+    ? []
+    : grain === 'chn'
+      ? chainRows.filter((r) => !panelChains || panelChains.has(r.id))
+      : grain === 'mut'
+        ? (mutations as unknown as Row[]).filter((r) => !panelMutations || panelMutations.has(r.id))
+        : vectorRows.filter((r) => !panelConstructs || panelConstructs.has(r.id));
+  const cols = grain === 'chn' ? CHN_COLS : grain === 'mut' ? MUT_COLS : CON_COLS;
+  const title = !activePanel
+    ? 'Select a panel'
+    : grain === 'chn'
+      ? `${activePanel.name} · ${activePanel.id}`
+      : grain === 'mut'
+        ? 'Mutation sets'
+        : 'Constructs';
+  const notice = waiting
+    ? 'Select a panel registered in Luma. The molecules in that panel decide which chains, mutations, and constructs you can use.'
+    : undefined;
+
+  const openPanel = (id: string) => {
+    const archetypes = archetypeIdsOf(book, id);
+    const constructs = panelConstructIds(book, id);
+    const muts = panelMutationIds(book, id);
+    setState((s) => {
+      const chn = { ...s.sel.chn };
+      const con = { ...s.sel.con };
+      const mut = { ...s.sel.mut };
+      if (archetypes) for (const key of Object.keys(chn)) if (!archetypes.has(key)) delete chn[key];
+      if (constructs) for (const key of Object.keys(con)) if (!constructs.has(key)) delete con[key];
+      if (muts) for (const key of Object.keys(mut)) if (!muts.has(key)) delete mut[key];
+      return { ...s, activePanelId: id, sel: { ...s.sel, fmt: {}, chn, con, mut } };
+    });
+  };
+  const openRequestById = (id: string) => {
+    const req = book.requests.find((r) => r.id === id);
+    setPad(req?.drafts[0]?.design ?? EMPTY_DESIGN);
+    setState((s) => ({
+      ...s,
+      activeRequestId: id,
+      activePanelId: req?.panelId ?? s.activePanelId,
+    }));
+    if (req?.panelId) openPanel(req.panelId);
+  };
   const railRows =
     grain === 'fmt'
       ? rows
@@ -419,7 +482,7 @@ export default function App() {
     grain === 'fmt'
       ? [r.id, r.name, r.target, r.mutset, r.notes, r.mispair, r.tier].join(' ')
       : grain === 'chn'
-        ? [r.id, r.name, r.note, r.module, r.partner, r.slots, r.stock].join(' ')
+        ? [r.id, r.luma, r.name, r.note, r.module, r.partner, r.slots, r.constructNote].join(' ')
         : grain === 'mut'
           ? [r.id, r.name, r.purpose, r.positions, r.numbering, r.domain, r.carried, r.notes, r.partner].join(' ')
           : [r.id, r.role, r.insert, r.module, r.eng, r.note, r.sel, r.stock, r.vnames].join(' ');
@@ -428,7 +491,7 @@ export default function App() {
   return (
     <>
       <header className="toolbar">
-        <div className="tool-brand" title="Pick a format and its chains and plasmids come with it.">
+        <div className="tool-brand" title="Design a molecule, register the panel, then build its chains.">
           Protein Chain Workbench
         </div>
         <LevelTabs
@@ -436,9 +499,10 @@ export default function App() {
           model={model}
           seed={seed}
           builds={variantList(state.variants).length}
+          requestCount={`${state.requests.filter((r) => r.status === 'draft').length} drafts · ${book.panels.length} panels`}
           onGrain={(g) => setState((s) => ({ ...s, grain: g }))}
         />
-        {isVar ? null : (
+        {isVar || isReq ? null : (
           <input
             className="tool-filter"
             type="search"
@@ -463,9 +527,12 @@ export default function App() {
       <div className="statusbar" role="status">
         <span>
           {grain === 'fmt'
-            ? `${model.reachF.size} of ${seed.formats.length} documents in play`
+            ? `${book.panels.length} panels registered in Luma`
             : grain === 'chn'
-              ? `${model.buildC.size} in build, ${model.reachC.size} available`
+              ? activePanel
+                ? `${activePanel.name}: ${model.buildC.size} in build, ${model.reachC.size} available`
+                : 'Select a registered panel'
+
               : grain === 'var'
                 ? `${slots.length} slots, ${variantList(state.variants).length || 1} builds`
                 : grain === 'mut'
@@ -523,12 +590,46 @@ export default function App() {
               })
             }
           />
+        ) : isReq ? (
+          <RequestRail
+            requests={book.requests}
+            activeId={state.activeRequestId}
+            query={query.fmt}
+            expanded={sides.layout.leftOpen}
+            onFold={() => sides.toggle('left')}
+            fold={<FoldBtn side="left" open={sides.layout.leftOpen} onClick={() => sides.toggle('left')} />}
+            grip={
+              <ResizeGrip
+                side="left"
+                onDrag={(e) => sides.startResize('left', e)}
+                onReset={() => sides.resetWidth('left')}
+              />
+            }
+            onQuery={(q) => setQuery((qs) => ({ ...qs, fmt: q }))}
+            onNew={() => {
+              const req = newRequest(state.requests);
+              setPad(EMPTY_DESIGN);
+              setState((s) => ({ ...s, requests: [req, ...s.requests], activeRequestId: req.id }));
+            }}
+            onOpen={openRequestById}
+          />
         ) : (
           <FacetRail
             title="Sources"
             facets={facets}
             rows={railRows}
             facetSel={liveFacets}
+            lead={
+              grain === 'chn' ? (
+                <PanelPick
+                  panels={book.panels}
+                  activeId={state.activePanelId}
+                  query={panelQuery}
+                  onQuery={setPanelQuery}
+                  onOpen={openPanel}
+                />
+              ) : null
+            }
             expanded={sides.layout.leftOpen}
             onFold={() => sides.toggle('left')}
             fold={<FoldBtn side="left" open={sides.layout.leftOpen} onClick={() => sides.toggle('left')} />}
@@ -553,7 +654,60 @@ export default function App() {
           />
         )}
 
-        {isVar ? (
+        {isReq ? (
+          <RequestBench
+            seed={seed}
+            book={book}
+            request={openRequest}
+            design={pad}
+            onDesign={setPad}
+            onRename={(name) =>
+              setState((s) => ({
+                ...s,
+                requests: s.requests.map((r) =>
+                  r.id === s.activeRequestId && r.status === 'draft' ? { ...r, name } : r,
+                ),
+              }))
+            }
+            onTarget={(index, value) =>
+              setPad((d) => {
+                const targets: [string, string] = [d.targets[0], d.targets[1]];
+                targets[index] = value;
+                return { ...d, targets };
+              })
+            }
+            onAdd={() => {
+              const format = matchFormat(seed, pad);
+              if (!format || !openRequest || openRequest.status === 'registered') return;
+              const draft: DraftMolecule = {
+                id: `draft-${crypto.randomUUID()}`,
+                name: format.name,
+                design: pad,
+                formatId: format.id,
+              };
+              setState((s) => ({
+                ...s,
+                requests: s.requests.map((r) =>
+                  r.id === openRequest.id ? { ...r, drafts: [...r.drafts, draft] } : r,
+                ),
+              }));
+            }}
+            onRegister={() => {
+              if (!openRequest) return;
+              const minted = registerRequest(book, openRequest, seed);
+              if (!minted) return;
+              setState((s) => ({
+                ...s,
+                requests: s.requests.map((r) => (r.id === minted.request.id ? minted.request : r)),
+                userPanels: [...s.userPanels, minted.panel],
+                userMolecules: [...s.userMolecules, ...minted.molecules],
+                activePanelId: minted.panel.id,
+                activeRequestId: minted.request.id,
+              }));
+            }}
+            onOpenMolecule={(draft) => setPad(draft.design)}
+          />
+        ) : isVar ? (
           <VariableRegions
             slots={slots}
             variants={state.variants}
@@ -577,14 +731,13 @@ export default function App() {
             rows={rows}
             cols={cols}
             model={model}
-            marks={grain === 'mut' ? state.sel.mut : grain === 'fmt' || grain === 'chn' || grain === 'con' ? state.sel[grain] : {}}
+            marks={grain === 'mut' ? state.sel.mut : state.sel[grain]}
             query={query[grain] ?? ''}
             facetSel={liveFacets}
             hideOut={state.hideOut}
             text={text}
-            onMark={(id, v) => {
-              if (grain === 'fmt' || grain === 'chn' || grain === 'con' || grain === 'mut') setMark(grain, id, v);
-            }}
+            notice={notice}
+            onMark={(id, v) => setMark(grain, id, v)}
             onHideOut={() => setState((s) => ({ ...s, hideOut: !s.hideOut }))}
           />
         )}
@@ -598,6 +751,13 @@ export default function App() {
           library={state.library}
           mutations={mutations}
           presets={state.presets}
+          requestItems={
+            activePanel
+              ? book.molecules
+                  .filter((m) => m.panelId === activePanel.id)
+                  .map((m) => ({ id: m.id, label: m.name, note: `${m.id} · ${m.formatId}` }))
+              : undefined
+          }
           expanded={sides.layout.rightOpen}
           onFold={() => sides.toggle('right')}
           fold={<FoldBtn side="right" open={sides.layout.rightOpen} onClick={() => sides.toggle('right')} />}
