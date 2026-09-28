@@ -460,6 +460,16 @@ export default function App() {
       return { ...s, activePanelId: id, sel: { ...s.sel, fmt: {}, chn, con, mut } };
     });
   };
+  const deleteDraft = (id: string) => {
+    const target = state.requests.find((r) => r.id === id);
+    if (!target || target.status !== 'draft') return;
+    if (state.activeRequestId === id) setPad(EMPTY_DESIGN);
+    setState((s) => ({
+      ...s,
+      requests: s.requests.filter((r) => r.id !== id || r.status !== 'draft'),
+      activeRequestId: s.activeRequestId === id ? null : s.activeRequestId,
+    }));
+  };
   const openRequestById = (id: string) => {
     const req = book.requests.find((r) => r.id === id);
     setPad(req?.drafts[0]?.design ?? EMPTY_DESIGN);
@@ -612,6 +622,7 @@ export default function App() {
               setState((s) => ({ ...s, requests: [req, ...s.requests], activeRequestId: req.id }));
             }}
             onOpen={openRequestById}
+            onDeleteDraft={deleteDraft}
           />
         ) : (
           <FacetRail
@@ -717,6 +728,7 @@ export default function App() {
               openRequestById(id);
               if (design) setPad(design);
             }}
+            onDeleteDraft={deleteDraft}
           />
         ) : isVar ? (
           <VariableRegions

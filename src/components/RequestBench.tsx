@@ -17,6 +17,7 @@ export function RequestRail({
   onQuery,
   onNew,
   onOpen,
+  onDeleteDraft,
 }: {
   requests: RequestDoc[];
   activeId: string | null;
@@ -28,6 +29,7 @@ export function RequestRail({
   onQuery: (q: string) => void;
   onNew: () => void;
   onOpen: (id: string) => void;
+  onDeleteDraft: (id: string) => void;
 }) {
   const q = query.trim().toLowerCase();
   const shown = requests.filter((r) => {
@@ -60,7 +62,7 @@ export function RequestRail({
               onChange={(e) => onQuery(e.target.value)}
             />
           </div>
-          <RequestGroup title="Drafts" rows={drafts} activeId={activeId} onOpen={onOpen} />
+          <RequestGroup title="Drafts" rows={drafts} activeId={activeId} onOpen={onOpen} onDelete={onDeleteDraft} />
           <RequestGroup title="Registered in Luma" rows={registered} activeId={activeId} onOpen={onOpen} />
         </div>
       ) : null}
@@ -74,11 +76,13 @@ function RequestGroup({
   rows,
   activeId,
   onOpen,
+  onDelete,
 }: {
   title: string;
   rows: RequestDoc[];
   activeId: string | null;
   onOpen: (id: string) => void;
+  onDelete?: (id: string) => void;
 }) {
   return (
     <div className="src-folder">
@@ -88,19 +92,26 @@ function RequestGroup({
       </div>
       {rows.length ? (
         rows.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            className={`req-row${r.id === activeId ? ' on' : ''}`}
-            onClick={() => onOpen(r.id)}
-          >
-            <span className="nm">{r.name}</span>
-            <span className="sm">
-              {r.panelId
-                ? `${r.panelId} · ${r.drafts.length} molecule${r.drafts.length === 1 ? '' : 's'}`
-                : `${r.drafts.length} molecule${r.drafts.length === 1 ? '' : 's'} · not registered`}
-            </span>
-          </button>
+          <div key={r.id} className={`req-line${r.id === activeId ? ' on' : ''}`}>
+            <button type="button" className="req-row" onClick={() => onOpen(r.id)}>
+              <span className="nm">{r.name}</span>
+              <span className="sm">
+                {r.panelId
+                  ? `${r.panelId} · ${r.drafts.length} molecule${r.drafts.length === 1 ? '' : 's'}`
+                  : `${r.drafts.length} molecule${r.drafts.length === 1 ? '' : 's'} · not registered`}
+              </span>
+            </button>
+            {onDelete ? (
+              <button
+                type="button"
+                className="req-del"
+                aria-label={`Delete ${r.name}`}
+                onClick={() => onDelete(r.id)}
+              >
+                Delete
+              </button>
+            ) : null}
+          </div>
         ))
       ) : (
         <div className="src-empty">None</div>
@@ -170,6 +181,7 @@ export function RequestBench({
   onRegister,
   onOpenMolecule,
   onOpenRequest,
+  onDeleteDraft,
 }: {
   seed: Seed;
   book: LumaBook;
@@ -182,6 +194,7 @@ export function RequestBench({
   onRegister: (draftIds: string[]) => void;
   onOpenMolecule: (draft: DraftMolecule) => void;
   onOpenRequest: (id: string, design?: PadDesign) => void;
+  onDeleteDraft: (id: string) => void;
 }) {
   const matched = matchFormat(seed, design);
   const chainIds = matched
@@ -217,6 +230,11 @@ export function RequestBench({
           <div className="panel-h-act">
             <span className="mono">{request.id}</span>
             {request.panelId ? <span className="pill on">{request.panelId}</span> : <span className="pill">Draft</span>}
+            {!locked ? (
+              <button className="btn sm" type="button" onClick={() => onDeleteDraft(request.id)}>
+                Delete draft
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
