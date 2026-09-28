@@ -1,5 +1,6 @@
-import { useState, type DragEvent } from 'react';
+import { useEffect, useState, type DragEvent, type MouseEvent } from 'react';
 import { BB_LIBRARY, bbDef, isFcScaffold, needsLight } from '../model/blocks';
+import { completeDesign, joinCTerm, removeCTerm, replaceCTerm, setBlockTarget, type CSide } from '../model/design';
 import {
   ARM_TILT,
   BAR_T,
@@ -13,7 +14,6 @@ import {
   HINGE_ORANGE,
   LOZENGE_R,
   NEUTRAL,
-  PAD_VIEW,
   SELECTION,
   STAPLE_GRAY,
   STAPLE_W,
@@ -25,6 +25,9 @@ import {
   armAnchor,
   cellBox,
   colX,
+  cTermDropY,
+  cTermOrigin,
+  padFrame,
   domainPath,
   lattice,
   latticeBox,
@@ -36,6 +39,12 @@ import {
   type Lattice,
 } from '../model/glyph';
 import type { ArmId, BbKind, PadDesign } from '../model/types';
+
+type SlotPick = { at: 'left' | 'right' | 'fc' } | { at: 'cLeft' | 'cRight'; index: number };
+
+function sideOf(at: 'cLeft' | 'cRight'): CSide {
+  return at === 'cLeft' ? 'left' : 'right';
+}
 
 export const BB_DRAG_TYPE = 'application/x-msab-bb';
 
@@ -60,46 +69,99 @@ export function DesignPad({
   design: PadDesign;
   onChange: (next: PadDesign) => void;
 }) {
+  const d = completeDesign(design);
   const [overArm, setOverArm] = useState<ArmId | null>(null);
   const [overFc, setOverFc] = useState(false);
+  const [overC, setOverC] = useState<CSide | null>(null);
   const [zoom, setZoom] = useState(1);
-  const slots = targetSlots(design.targets);
-  const pairFor = (arm: ArmId): ColorPair => {
-    const target = design.targets[arm === 'left' ? 0 : 1];
-    return slotColors(target ? slots.get(target) : undefined);
-  };
-  const needLight = (['left', 'right'] as ArmId[]).filter((arm) => needsLight(design[arm]));
+  const [pick, setPick] = useState<SlotPick | null>(null);
+  const [join, setJoin] = useState<CSide | 'both' | null>(null);
+  const named = [...d.targets, ...d.cTargetLeft, ...d.cTargetRight];
+  const slots = targetSlots(named);
+  const colorFor = (target: string): ColorPair => slotColors(target ? slots.get(target) : undefined);
+  const pairFor = (arm: ArmId): ColorPair => colorFor(d.targets[arm === 'left' ? 0 : 1]);
+  const needLight = (['left', 'right'] as ArmId[]).filter((arm) => needsLight(d[arm]));
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (!pick) return;
+      e.preventDefault();
+      removeSelected();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   function applyKind(kind: BbKind, arm: ArmId | 'fc') {
     if (isFcScaffold(kind) || arm === 'fc') {
       if (!isFcScaffold(kind)) return;
-      onChange({ ...design, fc: kind });
+      onChange({ ...d, fc: kind });
+      setPick({ at: 'fc' });
+      setJoin(null);
       return;
     }
     if (bbDef(kind).fusesOnly) {
-      if (design[arm] === 'empty') return;
+      if (d[arm] === 'empty') return;
       const key = arm === 'left' ? 'fusedLeft' : 'fusedRight';
-      if (!design[key].includes(kind)) onChange({ ...design, [key]: [...design[key], kind] });
+      if (!d[key].includes(kind)) onChange({ ...d, [key]: [...d[key], kind] });
       return;
     }
-    const next = { ...design, [arm]: kind };
+    const next = { ...d, [arm]: kind };
     const stillNeeds = (['left', 'right'] as ArmId[]).some((a) => needsLight(next[a]));
     if (!stillNeeds) next.light = 'unset';
     onChange(next);
+    setPick({ at: arm });
+    setJoin(null);
   }
 
   function placeFromPalette(kind: BbKind) {
     if (isFcScaffold(kind)) {
-      onChange({ ...design, fc: kind });
+      applyKind(kind, 'fc');
+      return;
+    }
+    if (join && d.fc !== 'none' && !bbDef(kind).fusesOnly) {
+      const sides: CSide[] = join === 'both' ? ['left', 'right'] : [join];
+      const target = join === 'right' ? d.targets[1] : d.targets[0];
+      const next = joinCTerm(d, sides, kind, target);
+      onChange(next);
+      setPick({ at: join === 'right' ? 'cRight' : 'cLeft', index: (join === 'right' ? next.cRight : next.cLeft).length - 1 });
+      return;
+    }
+    if (pick?.at === 'left' || pick?.at === 'right') {
+      applyKind(kind, pick.at);
+      return;
+    }
+    if (pick && (pick.at === 'cLeft' || pick.at === 'cRight') && !bbDef(kind).fusesOnly) {
+      onChange(replaceCTerm(d, sideOf(pick.at), pick.index, kind));
       return;
     }
     if (bbDef(kind).fusesOnly) {
-      const arm: ArmId = design.left !== 'empty' ? 'left' : 'right';
+      const arm: ArmId = d.left !== 'empty' ? 'left' : 'right';
       applyKind(kind, arm);
       return;
     }
-    const arm: ArmId = design.left === 'empty' ? 'left' : 'right';
+    const arm: ArmId = d.left === 'empty' ? 'left' : 'right';
     applyKind(kind, arm);
+  }
+
+  function removeSelected() {
+    if (!pick) return;
+    if (pick.at === 'left' || pick.at === 'right') {
+      const key = pick.at === 'left' ? 'fusedLeft' : 'fusedRight';
+      onChange({ ...d, [pick.at]: 'empty', [key]: [] });
+      return;
+    }
+    if (pick.at === 'fc' || !('index' in pick)) {
+      onChange({ ...d, fc: 'none' });
+      setPick(null);
+      return;
+    }
+    onChange(removeCTerm(d, sideOf(pick.at), pick.index));
+    setPick(null);
+    setJoin(sideOf(pick.at));
   }
 
   function dropOnCanvas(e: DragEvent<SVGSVGElement>) {
@@ -116,6 +178,15 @@ export function DesignPad({
     const ctm = svg.getScreenCTM();
     if (!ctm) return;
     const p = pt.matrixTransform(ctm.inverse());
+    const fcBottom = FC.top + 2 * DOMAIN_H + GAP;
+    if (p.y > fcBottom && d.fc !== 'none' && !isFcScaffold(kind) && !bbDef(kind).fusesOnly) {
+      const side: CSide = p.x < FC.cx ? 'left' : 'right';
+      const next = joinCTerm(d, [side], kind, side === 'left' ? d.targets[0] : d.targets[1]);
+      onChange(next);
+      setPick({ at: side === 'left' ? 'cLeft' : 'cRight', index: (side === 'left' ? next.cLeft : next.cRight).length - 1 });
+      setJoin(null);
+      return;
+    }
     if (isFcScaffold(kind) || p.y > FC.top - GAP) {
       applyKind(kind, 'fc');
       return;
@@ -144,7 +215,8 @@ export function DesignPad({
     const kind = readKind(e);
     if (!kind || !isFcScaffold(kind)) return;
     e.preventDefault();
-    onChange({ ...design, fc: kind });
+    onChange({ ...d, fc: kind });
+    setPick({ at: 'fc' });
   }
 
   function Block({ bb, pair, homodimer }: { bb: BbKind; pair: ColorPair; homodimer?: boolean }) {
@@ -187,14 +259,19 @@ export function DesignPad({
   }
 
   function Arm({ arm }: { arm: ArmId }) {
-    const bb = design[arm];
+    const bb = d[arm];
     const anchor = armAnchor(arm);
     const empty = bb === 'empty';
     const l: Lattice = lattice(empty ? 'fab' : bb);
     const box = latticeBox(l);
-    const fused = arm === 'left' ? design.fusedLeft : design.fusedRight;
+    const fused = arm === 'left' ? d.fusedLeft : d.fusedRight;
     return (
       <g
+        onClick={(e: MouseEvent) => {
+          e.stopPropagation();
+          setPick({ at: arm });
+          setJoin(null);
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           setOverArm(arm);
@@ -230,7 +307,30 @@ export function DesignPad({
               strokeDasharray={overArm === arm ? undefined : `${GAP / 2} ${GAP / 2}`}
             />
           )}
-          {!empty && <Block bb={bb} pair={pairFor(arm)} />}
+          {!empty && (
+          <g
+            style={{ cursor: 'pointer' }}
+            onClick={(e: MouseEvent) => {
+              e.stopPropagation();
+              setPick({ at: arm });
+              setJoin(null);
+            }}
+          >
+            {pick?.at === arm && (
+              <rect
+                x={box.x - GAP / 2}
+                y={box.y - GAP / 2}
+                width={box.w + GAP}
+                height={box.h + GAP}
+                rx={CORNER_R * 2}
+                fill="none"
+                stroke={SELECTION}
+                strokeWidth={STROKE_W * 2.4}
+              />
+            )}
+            <Block bb={bb} pair={pairFor(arm)} />
+          </g>
+        )}
           {fused.map((kind, i) => {
             const fw = DOMAIN_W * 0.6;
             const fh = DOMAIN_H * 0.55;
@@ -251,9 +351,82 @@ export function DesignPad({
     );
   }
 
+  function hang(side: CSide) {
+    const blocks = side === 'left' ? d.cLeft : d.cRight;
+    const targets = side === 'left' ? d.cTargetLeft : d.cTargetRight;
+    const at = side === 'left' ? 'cLeft' : 'cRight';
+    const dropY = cTermDropY(blocks);
+    return (
+      <g>
+        {blocks.map((kind, index) => {
+          const origin = cTermOrigin(side, blocks.slice(0, index), kind);
+          const l = lattice(kind);
+          const box = latticeBox(l);
+          const selected = pick?.at === at && pick.index === index;
+          return (
+            <g key={`${side}-${index}`} transform={`translate(${origin.x} ${origin.y})`}>
+              <line x1={0} y1={box.y - GAP} x2={0} y2={box.y} stroke={STEM_GRAY} strokeWidth={STEM_W} />
+              <g
+                style={{ cursor: 'pointer' }}
+                onClick={(e: MouseEvent) => {
+                  e.stopPropagation();
+                  setPick({ at, index });
+                  setJoin(null);
+                }}
+              >
+                {selected && (
+                  <rect
+                    x={box.x - GAP / 2}
+                    y={box.y - GAP / 2}
+                    width={box.w + GAP}
+                    height={box.h + GAP}
+                    rx={CORNER_R * 2}
+                    fill="none"
+                    stroke={SELECTION}
+                    strokeWidth={STROKE_W * 2.4}
+                  />
+                )}
+                <Block bb={kind} pair={colorFor(targets[index] ?? '')} />
+              </g>
+            </g>
+          );
+        })}
+        <rect
+          x={(side === 'left' ? FC.cx - COL_PITCH / 2 : FC.cx + COL_PITCH / 2) - DOMAIN_W / 2}
+          y={dropY}
+          width={DOMAIN_W}
+          height={DOMAIN_H * 0.7}
+          rx={CORNER_R * 2}
+          fill={overC === side ? 'rgba(124, 221, 206, 0.12)' : 'none'}
+          stroke={overC === side ? SELECTION : '#4B4B4B'}
+          strokeWidth={STROKE_W * 1.5}
+          strokeDasharray={`${GAP / 2} ${GAP / 2}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOverC(side);
+          }}
+          onDragLeave={() => setOverC(null)}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOverC(null);
+            const kind = readKind(e);
+            carried = null;
+            if (!kind || isFcScaffold(kind) || bbDef(kind).fusesOnly) return;
+            const next = joinCTerm(d, [side], kind, side === 'left' ? d.targets[0] : d.targets[1]);
+            onChange(next);
+            setPick({ at, index: (side === 'left' ? next.cLeft : next.cRight).length - 1 });
+            setJoin(null);
+          }}
+        />
+      </g>
+    );
+  }
+
   function FcScaffold() {
-    const placed = design.fc !== 'none';
-    const homodimer = design.fc !== 'heterofc';
+    const placed = d.fc !== 'none';
+    const homodimer = d.fc !== 'heterofc';
     return (
       <g
         onDragOver={(e) => {
@@ -277,10 +450,32 @@ export function DesignPad({
           />
         )}
         {placed && (
-          <g transform={`translate(${FC.cx - COL_PITCH / 2} ${FC_BOTTOM})`}>
-            <Block bb={design.fc === 'heterofc' ? 'heterofc' : 'homofc'} pair={NEUTRAL} homodimer={homodimer} />
+          <g
+            transform={`translate(${FC.cx - COL_PITCH / 2} ${FC_BOTTOM})`}
+            style={{ cursor: 'pointer' }}
+            onClick={(e: MouseEvent) => {
+              e.stopPropagation();
+              setPick({ at: 'fc' });
+              setJoin(null);
+            }}
+          >
+            {pick?.at === 'fc' && (
+              <rect
+                x={-GAP}
+                y={rowTop(0, 2) - GAP / 2}
+                width={COL_PITCH + DOMAIN_W + GAP}
+                height={-rowTop(0, 2) + GAP}
+                rx={CORNER_R * 2}
+                fill="none"
+                stroke={SELECTION}
+                strokeWidth={STROKE_W * 2.4}
+              />
+            )}
+            <Block bb={d.fc === 'heterofc' ? 'heterofc' : 'homofc'} pair={NEUTRAL} homodimer={homodimer} />
           </g>
         )}
+        {placed && hang('left')}
+        {placed && hang('right')}
         {[BAR_HIGH, BAR_LOW].map((y) => (
           <rect
             key={y}
@@ -296,8 +491,9 @@ export function DesignPad({
     );
   }
 
-  const view = { w: PAD_VIEW.w / zoom, h: PAD_VIEW.h / zoom };
-  const viewBox = `${(PAD_VIEW.w - view.w) / 2} ${(PAD_VIEW.h - view.h) / 2} ${view.w} ${view.h}`;
+  const frame = padFrame(d.fc, d.cLeft, d.cRight);
+  const view = { w: frame.w / zoom, h: frame.h / zoom };
+  const viewBox = `${(frame.w - view.w) / 2} ${(frame.h - view.h) / 2} ${view.w} ${view.h}`;
   const chips = [...slots.entries()].sort((a, b) => a[1] - b[1]);
 
   return (
@@ -307,7 +503,7 @@ export function DesignPad({
           <button
             key={def.kind}
             type="button"
-            className={`bb-card${design.fc === def.kind || design.left === def.kind || design.right === def.kind ? ' placed' : ''}`}
+            className={`bb-card${d.fc === def.kind || d.left === def.kind || d.right === def.kind || d.cLeft.includes(def.kind) || d.cRight.includes(def.kind) ? ' placed' : ''}`}
             draggable
             title={def.description}
             onClick={() => placeFromPalette(def.kind)}
@@ -334,6 +530,10 @@ export function DesignPad({
           aria-label="Molecule design pad"
           onDragOver={(e) => e.preventDefault()}
           onDrop={dropOnCanvas}
+          onClick={() => {
+            setPick(null);
+            setJoin(null);
+          }}
         >
           <FcScaffold />
           <Arm arm="left" />
@@ -366,15 +566,15 @@ export function DesignPad({
           <div className="seg">
             <button
               type="button"
-              className={design.light === 'common' ? 'active' : ''}
-              onClick={() => onChange({ ...design, light: 'common' })}
+              className={d.light === 'common' ? 'active' : ''}
+              onClick={() => onChange({ ...d, light: 'common' })}
             >
               Common
             </button>
             <button
               type="button"
-              className={design.light === 'per-arm' ? 'active' : ''}
-              onClick={() => onChange({ ...design, light: 'per-arm' })}
+              className={d.light === 'per-arm' ? 'active' : ''}
+              onClick={() => onChange({ ...d, light: 'per-arm' })}
             >
               One per arm
             </button>
@@ -384,12 +584,76 @@ export function DesignPad({
           </span>
         </div>
       )}
+      {d.fc !== 'none' && (
+        <div className="cjoin">
+          <span className="lc-title">Fc C-terminus</span>
+          {(
+            [
+              ['left', 'Left chain'],
+              ['right', 'Right chain'],
+              ['both', 'Both chains'],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={join === id ? 'active' : ''}
+              onClick={() => setJoin(join === id ? null : id)}
+            >
+              {label}
+            </button>
+          ))}
+          <span className="sm">
+            {join
+              ? 'The next building block joins that C-terminus. Click the choice again to place on an arm instead.'
+              : 'Choose a chain, then a building block, or drop a block on the dashed target under the Fc.'}
+          </span>
+        </div>
+      )}
+      {pick && (
+        <div className="pad-inspector">
+          <span className="lc-title">{pickLabel(pick, d)}</span>
+          {pick.at !== 'fc' && (
+            <label>
+              Target
+              <input
+                className="search"
+                value={pickTarget(pick, d)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (pick.at === 'left' || pick.at === 'right') onChange(setBlockTarget(d, pick.at, 0, value));
+                  else if (pick.at === 'cLeft' || pick.at === 'cRight') onChange(setBlockTarget(d, pick.at, pick.index, value));
+                }}
+              />
+            </label>
+          )}
+          <button className="btn" type="button" onClick={removeSelected}>
+            Delete
+          </button>
+        </div>
+      )}
       <p className="pair-note">
-        Drag a building block onto an arm. Homo-Fc and Hetero-Fc drop on the scaffold. Arms splay {ARM_TILT}° with the
-        N-terminus at the top. Shape is the block; colour is the target.
+        Click a block to select it, then delete it or give it a target. The next palette block replaces the selection.
+        Drop a block under the Fc to join a C-terminus. Arms splay {ARM_TILT}° with the N-terminus at the top.
       </p>
     </div>
   );
+}
+
+function pickLabel(pick: SlotPick, design: PadDesign): string {
+  if (pick.at === 'fc') return design.fc === 'heterofc' ? 'Hetero-Fc' : 'Homo-Fc';
+  if (pick.at === 'left' || pick.at === 'right') return `${bbDef(design[pick.at]).label} · ${pick.at} arm`;
+  const blocks = pick.at === 'cLeft' ? design.cLeft : design.cRight;
+  const chain = pick.at === 'cLeft' ? 'left' : 'right';
+  const index = 'index' in pick ? pick.index : 0;
+  return `${bbDef(blocks[index] ?? 'empty').label} · ${chain} C-terminus`;
+}
+
+function pickTarget(pick: SlotPick, design: PadDesign): string {
+  if (pick.at === 'left') return design.targets[0];
+  if (pick.at === 'right') return design.targets[1];
+  if (pick.at === 'fc' || !('index' in pick)) return '';
+  return (pick.at === 'cLeft' ? design.cTargetLeft : design.cTargetRight)[pick.index] ?? '';
 }
 
 export function PaletteGlyph({ bb, width = 40, height = 30 }: { bb: BbKind; width?: number; height?: number }) {

@@ -8,8 +8,72 @@ export const EMPTY_DESIGN: PadDesign = {
   light: 'unset',
   fusedLeft: [],
   fusedRight: [],
+  cLeft: [],
+  cRight: [],
+  cTargetLeft: [],
+  cTargetRight: [],
   targets: ['Antigen A', 'Antigen B'],
 };
+
+/** Older saved designs predate C-terminal joins. Fill those lists in. */
+export function completeDesign(design: PadDesign): PadDesign {
+  const cLeft = design.cLeft ?? [];
+  const cRight = design.cRight ?? [];
+  const cTargetLeft = design.cTargetLeft ?? [];
+  const cTargetRight = design.cTargetRight ?? [];
+  return {
+    ...design,
+    fusedLeft: design.fusedLeft ?? [],
+    fusedRight: design.fusedRight ?? [],
+    cLeft,
+    cRight,
+    cTargetLeft: cLeft.map((_, i) => cTargetLeft[i] || 'Antigen'),
+    cTargetRight: cRight.map((_, i) => cTargetRight[i] || 'Antigen'),
+    targets: design.targets ?? ['Antigen A', 'Antigen B'],
+  };
+}
+
+export type CSide = 'left' | 'right';
+
+/** Hang a block off one Fc chain, or off both. */
+export function joinCTerm(design: PadDesign, sides: CSide[], kind: BbKind, target = 'Antigen'): PadDesign {
+  let next = completeDesign(design);
+  for (const side of sides) {
+    if (side === 'left') next = { ...next, cLeft: [...next.cLeft, kind], cTargetLeft: [...next.cTargetLeft, target] };
+    else next = { ...next, cRight: [...next.cRight, kind], cTargetRight: [...next.cTargetRight, target] };
+  }
+  return next;
+}
+
+export function replaceCTerm(design: PadDesign, side: CSide, index: number, kind: BbKind): PadDesign {
+  const next = completeDesign(design);
+  const blocks = side === 'left' ? [...next.cLeft] : [...next.cRight];
+  if (!blocks[index]) return next;
+  blocks[index] = kind;
+  return side === 'left' ? { ...next, cLeft: blocks } : { ...next, cRight: blocks };
+}
+
+export function removeCTerm(design: PadDesign, side: CSide, index: number): PadDesign {
+  const next = completeDesign(design);
+  const blocks = (side === 'left' ? next.cLeft : next.cRight).filter((_, i) => i !== index);
+  const targets = (side === 'left' ? next.cTargetLeft : next.cTargetRight).filter((_, i) => i !== index);
+  return side === 'left' ? { ...next, cLeft: blocks, cTargetLeft: targets } : { ...next, cRight: blocks, cTargetRight: targets };
+}
+
+export function setBlockTarget(
+  design: PadDesign,
+  slot: 'left' | 'right' | 'cLeft' | 'cRight',
+  index: number,
+  value: string,
+): PadDesign {
+  const next = completeDesign(design);
+  if (slot === 'left') return { ...next, targets: [value, next.targets[1]] };
+  if (slot === 'right') return { ...next, targets: [next.targets[0], value] };
+  const key = slot === 'cLeft' ? 'cTargetLeft' : 'cTargetRight';
+  const list = next[key].slice();
+  list[index] = value;
+  return { ...next, [key]: list };
+}
 
 function norm(kind: BbKind): string {
   if (kind === 'reagent') return 'mutein';
@@ -57,6 +121,10 @@ export function designForFormat(format: Format, chains: Chain[]): PadDesign {
     light,
     fusedLeft: [],
     fusedRight: [],
+    cLeft: /c-term/i.test(format.name) ? ['scfv'] : [],
+    cRight: /c-term/i.test(format.name) ? ['scfv'] : [],
+    cTargetLeft: /c-term/i.test(format.name) ? ['Antigen C'] : [],
+    cTargetRight: /c-term/i.test(format.name) ? ['Antigen C'] : [],
     targets,
   };
 }

@@ -1,6 +1,7 @@
 import { chainsForDesign, designForFormat } from './design';
 import type {
   ChainUse,
+  DraftMolecule,
   InventoryBook,
   LumaMolecule,
   LumaPanel,
@@ -252,6 +253,15 @@ export function panelMutationIds(book: LumaBook, panelId: string | null): Set<st
 
 let mintSeq = 0;
 
+function nextUserRequestId(requests: RequestDoc[]): string {
+  const n =
+    requests.reduce((max, request) => {
+      const match = /^REQ-R(\d+)$/.exec(request.id);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0) + 1;
+  return `REQ-R${String(n).padStart(3, '0')}`;
+}
+
 export function newRequest(existing: RequestDoc[]): RequestDoc {
   mintSeq += 1;
   const n = existing.filter((r) => r.id.startsWith('REQ-R')).length + mintSeq;
@@ -270,14 +280,28 @@ export interface Registration {
   request: RequestDoc;
   panel: LumaPanel;
   molecules: LumaMolecule[];
+  /** Molecules left on the working request, outside this group. */
+  remaining: DraftMolecule[];
 }
 
-/** Mint a panel UID, a molecule UID per draft, and reuse the catalog chain UIDs. */
-export function registerRequest(book: LumaBook, request: RequestDoc, seed: Seed): Registration | null {
-  const ready = request.drafts.filter((d) => d.formatId);
+/**
+ * Mint a panel UID for a group of molecules, a molecule UID for each one, and
+ * reuse the catalog chain UIDs. `draftIds` is the group; omit it to register
+ * every molecule on the request.
+ */
+export function registerRequest(
+  book: LumaBook,
+  request: RequestDoc,
+  seed: Seed,
+  draftIds?: string[],
+): Registration | null {
+  const wanted = draftIds ? new Set(draftIds) : null;
+  const ready = request.drafts.filter((d) => d.formatId && (!wanted || wanted.has(d.id)));
   if (!ready.length) return null;
+  const remaining = request.drafts.filter((d) => !ready.some((r) => r.id === d.id));
   const n = book.panels.filter((p) => p.id.startsWith('PN-R')).length + 1;
   const panelId = `PN-R${String(n).padStart(3, '0')}`;
+  const requestId = remaining.length ? nextUserRequestId(book.requests) : request.id;
   const molecules: LumaMolecule[] = ready.map((draft, i) => {
     const format = seed.formats.find((f) => f.id === draft.formatId)!;
     return {
@@ -292,7 +316,7 @@ export function registerRequest(book: LumaBook, request: RequestDoc, seed: Seed)
   const panel: LumaPanel = {
     id: panelId,
     name: request.name,
-    requestId: request.id,
+    requestId,
     project: request.name,
     registeredAt: new Date().toISOString().slice(0, 10),
     moleculeIds: molecules.map((m) => m.id),
@@ -303,6 +327,7 @@ export function registerRequest(book: LumaBook, request: RequestDoc, seed: Seed)
   return {
     request: {
       ...request,
+      id: requestId,
       status: 'registered',
       panelId,
       drafts: molecules.map((m) => ({
@@ -314,5 +339,6 @@ export function registerRequest(book: LumaBook, request: RequestDoc, seed: Seed)
     },
     panel,
     molecules,
+    remaining,
   };
 }

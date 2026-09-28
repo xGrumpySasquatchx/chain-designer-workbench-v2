@@ -7,7 +7,7 @@ import { addToLibrary, applyClones, applyPanels, filterCatalog, insertsByVector,
 import { compileSearch, panelMatches, searchCatalog, treeCatalog } from '../src/model/vsearch';
 import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
 import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
-import { EMPTY_DESIGN, matchFormat } from '../src/model/design';
+import { EMPTY_DESIGN, joinCTerm, matchFormat, removeCTerm, setBlockTarget } from '../src/model/design';
 import { archetypeIdsOf, assembleBook, chainUid, registerRequest } from '../src/model/luma';
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
 import { slotsFor } from '../src/model/slots';
@@ -470,6 +470,17 @@ const fabDesign = {
 };
 const matched = matchFormat(seed, fabDesign);
 check('a Fab / Homo-Fc design matches wild-type IgG', matched?.id === 'F-001', matched?.id);
+const both = joinCTerm({ ...EMPTY_DESIGN, fc: 'heterofc' }, ['left', 'right'], 'scfv', 'CD3');
+const rightOnly = removeCTerm(both, 'left', 0);
+const named = setBlockTarget(rightOnly, 'cRight', 0, 'PD-1');
+check(
+  'a block can join one Fc C-terminus and keep its own target',
+  both.cLeft.length === 1 &&
+    both.cRight.length === 1 &&
+    rightOnly.cLeft.length === 0 &&
+    rightOnly.cRight[0] === 'scfv' &&
+    named.cTargetRight[0] === 'PD-1',
+);
 const kappa = book.chains.find((c) => c.id === chainUid('CH-18'));
 check(
   'the conventional kappa light chain is a reusable reagent construct',
@@ -507,6 +518,32 @@ check(
     minted.molecules[0].chainIds.includes(chainUid('CH-01')) &&
     !minted.molecules[0].chainIds.includes(chainUid('CH-19')),
   minted?.molecules[0].chainIds.join(','),
+);
+const grouped = registerRequest(
+  book,
+  {
+    id: 'REQ-R002',
+    name: 'Two molecules',
+    createdAt: '2026-09-28',
+    status: 'draft',
+    panelId: null,
+    drafts: [
+      { id: 'd1', name: 'Keep', design: fabDesign, formatId: 'F-001' },
+      { id: 'd2', name: 'Leave', design: fabDesign, formatId: 'F-001' },
+    ],
+  },
+  seed,
+  ['d1'],
+);
+check(
+  'a grouped molecule receives the panel UID and the rest stay on the request',
+  !!grouped &&
+    grouped.molecules.length === 1 &&
+    grouped.molecules[0].panelId === grouped.panel.id &&
+    grouped.remaining.length === 1 &&
+    grouped.remaining[0].id === 'd2' &&
+    grouped.request.id !== 'REQ-R002',
+  `${grouped?.request.id} · ${grouped?.remaining.map((d) => d.id).join(',')}`,
 );
 
 console.log('\nAll selection checks passed.');

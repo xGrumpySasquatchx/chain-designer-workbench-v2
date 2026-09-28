@@ -279,7 +279,19 @@ textarea.search{min-height:66px; resize:vertical; font-family:"IBM Plex Mono",mo
 .req-actions{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
 .uid-list{list-style:none; margin:0; padding:0}
 .uid-list li{padding:3px 0; border-bottom:1px solid var(--rule-2)}
-.mol-list h3{margin:0 0 6px; font-size:12px}
+.glyph-board{display:flex; flex-direction:column; gap:12px}
+.glyph-board > h3,.glyph-head h3{margin:0; font-size:13px}
+.glyph-head{display:flex; justify-content:space-between; gap:8px; align-items:baseline; flex-wrap:wrap}
+.glyph-panel{border:1px solid var(--rule); border-radius:8px; padding:10px; background:var(--card)}
+.glyph-panel.working{background:var(--grain-bg)}
+.glyph-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; margin-top:8px}
+.glyph-card{border:1px solid #3a3a3a; border-radius:8px; background:#212121; overflow:hidden}
+.glyph-card.on{outline:2px solid var(--grain); outline-offset:1px}
+.glyph-open{appearance:none; width:100%; border:0; background:transparent; color:#eee; font:inherit; text-align:left; padding:6px; cursor:pointer}
+.glyph-open .nm{display:block; font-size:11.5px; margin-top:4px}
+.glyph-open .sm{display:block; color:#a3a3a3; font-size:10.5px}
+.mol-svg{width:100%; height:132px; display:block}
+.glyph-pick{display:flex; align-items:center; gap:6px; padding:0 6px 6px; color:#d0d0d0; font-size:11px}
 .mol-row{appearance:none; width:100%; display:flex; gap:10px; align-items:center; text-align:left;
   border:1px solid var(--rule); background:var(--card); color:inherit; font:inherit; border-radius:6px;
   padding:6px 8px; margin-bottom:6px; cursor:pointer}
@@ -292,11 +304,16 @@ textarea.search{min-height:66px; resize:vertical; font-family:"IBM Plex Mono",mo
 .bb-card span{font-size:10px; line-height:1.2; text-align:center}
 .bb-card:hover{background:#545454; color:#fff}
 .dpad{position:relative; background:#212121; border-radius:8px}
-.dpad-canvas{width:100%; height:auto; max-height:520px; display:block}
+.dpad-canvas{width:100%; height:auto; max-height:640px; display:block}
 .dpad-chips{position:absolute; top:8px; right:8px; display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-end; max-width:60%}
 .dpad-chip{border-radius:999px; padding:2px 8px; font-size:10px; letter-spacing:.04em; text-transform:uppercase; color:#fff}
 .dpad-tools{position:absolute; right:8px; bottom:8px; display:flex; flex-direction:column; gap:4px}
 .dpad-tool{width:24px; height:24px; border:0; border-radius:6px; background:#2a2a2a; color:#fff; cursor:pointer}
+.cjoin,.pad-inspector{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px}
+.cjoin button,.pad-inspector .btn{appearance:none; border:1px solid var(--rule); background:var(--card); color:inherit; font:inherit; font-size:12px; border-radius:4px; padding:3px 8px; cursor:pointer}
+.cjoin button.active{background:var(--grain-bg); color:var(--grain); font-weight:600}
+.pad-inspector label{display:flex; flex-direction:column; gap:3px; font-size:11.5px; color:var(--ink-2)}
+.pad-inspector .search{min-width:140px}
 .lc{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px}
 .lc-title{font-weight:600}
 .seg{display:inline-flex; border:1px solid var(--rule); border-radius:4px; overflow:hidden}

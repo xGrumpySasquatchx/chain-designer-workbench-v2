@@ -692,20 +692,31 @@ export default function App() {
                 ),
               }));
             }}
-            onRegister={() => {
+            onRegister={(draftIds) => {
               if (!openRequest) return;
-              const minted = registerRequest(book, openRequest, seed);
+              const minted = registerRequest(book, openRequest, seed, draftIds);
               if (!minted) return;
-              setState((s) => ({
-                ...s,
-                requests: s.requests.map((r) => (r.id === minted.request.id ? minted.request : r)),
-                userPanels: [...s.userPanels, minted.panel],
-                userMolecules: [...s.userMolecules, ...minted.molecules],
-                activePanelId: minted.panel.id,
-                activeRequestId: minted.request.id,
-              }));
+              setState((s) => {
+                const kept = minted.remaining.length
+                  ? s.requests.map((r) =>
+                      r.id === openRequest.id ? { ...r, status: 'draft' as const, panelId: null, drafts: minted.remaining } : r,
+                    )
+                  : s.requests.map((r) => (r.id === openRequest.id ? minted.request : r));
+                return {
+                  ...s,
+                  requests: minted.remaining.length ? [minted.request, ...kept] : kept,
+                  userPanels: [...s.userPanels, minted.panel],
+                  userMolecules: [...s.userMolecules, ...minted.molecules],
+                  activePanelId: minted.panel.id,
+                  activeRequestId: minted.request.id,
+                };
+              });
             }}
             onOpenMolecule={(draft) => setPad(draft.design)}
+            onOpenRequest={(id, design) => {
+              openRequestById(id);
+              if (design) setPad(design);
+            }}
           />
         ) : isVar ? (
           <VariableRegions

@@ -321,7 +321,7 @@ export function latticeBox(l: Lattice): Box {
   };
 }
 
-export const PAD_VIEW = { w: 640, h: 680 };
+export const PAD_VIEW = { w: 640, h: 820 };
 /** The Fc sits at the bottom centre, unrotated. */
 export const FC = { cx: PAD_VIEW.w / 2, top: 400 };
 /**
@@ -342,6 +342,42 @@ export interface ArmAnchor {
   stem: { x: number; y: number };
   tilt: number;
   mirror: boolean;
+}
+
+/** Canvas origin of a block hanging from one Fc C-terminus. `before` are the blocks already above it. */
+export function cTermOrigin(side: 'left' | 'right', before: BbKind[], kind: BbKind): { x: number; y: number } {
+  const x = side === 'left' ? FC.cx - COL_PITCH / 2 : FC.cx + COL_PITCH / 2;
+  let top = FC.top + 2 * DOMAIN_H + GAP * 2;
+  for (const prev of before) top += -rowTop(0, lattice(prev).rows) + GAP;
+  return { x, y: top + -rowTop(0, lattice(kind).rows) };
+}
+
+/** Top of the next empty C-terminal drop target on one Fc chain. */
+export function cTermDropY(blocks: BbKind[]): number {
+  let top = FC.top + 2 * DOMAIN_H + GAP * 2;
+  for (const prev of blocks) top += -rowTop(0, lattice(prev).rows) + GAP;
+  return top;
+}
+
+/** Canvas frame tall enough to keep every C-terminal block on screen. */
+export function padFrame(
+  fc: 'none' | 'homofc' | 'heterofc',
+  cLeft: BbKind[],
+  cRight: BbKind[],
+): { w: number; h: number } {
+  let bottom = PAD_VIEW.h;
+  if (fc !== 'none') {
+    const stacks = [
+      ['left', cLeft],
+      ['right', cRight],
+    ] as const;
+    for (const [side, blocks] of stacks) {
+      if (!blocks.length) continue;
+      const kind = blocks[blocks.length - 1]!;
+      bottom = Math.max(bottom, cTermOrigin(side, blocks.slice(0, -1), kind).y + GAP * 2);
+    }
+  }
+  return { w: PAD_VIEW.w, h: bottom };
 }
 
 export function armAnchor(arm: ArmId): ArmAnchor {

@@ -28,6 +28,13 @@ export interface PadDesign {
   light: LightMode;
   fusedLeft: BbKind[];
   fusedRight: BbKind[];
+  /** Blocks joined to the C-terminus of the left and right Fc chains. */
+  cLeft: BbKind[];
+  cRight: BbKind[];
+  /** Target bound to each C-terminal block, in the same order as the blocks. */
+  cTargetLeft: string[];
+  cTargetRight: string[];
+  /** Targets for the left and right arms. */
   targets: [string, string];
 }
 

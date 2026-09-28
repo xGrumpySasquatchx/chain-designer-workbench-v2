@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
-import { bbDef } from '../model/blocks';
+import { useState, type ReactNode } from 'react';
 import { designPlaced, matchFormat } from '../model/design';
 import { chainByArchetype, chainUid } from '../model/luma';
 import type { LumaBook } from '../model/luma';
 import type { DraftMolecule, LumaPanel, PadDesign, RequestDoc, Seed } from '../model/types';
 import { DesignPad } from './DesignPad';
+import { MoleculeGlyph } from './MoleculeGlyph';
 
 export function RequestRail({
   requests,
@@ -169,6 +169,7 @@ export function RequestBench({
   onAdd,
   onRegister,
   onOpenMolecule,
+  onOpenRequest,
 }: {
   seed: Seed;
   book: LumaBook;
@@ -178,8 +179,9 @@ export function RequestBench({
   onRename: (name: string) => void;
   onTarget: (index: 0 | 1, value: string) => void;
   onAdd: () => void;
-  onRegister: () => void;
+  onRegister: (draftIds: string[]) => void;
   onOpenMolecule: (draft: DraftMolecule) => void;
+  onOpenRequest: (id: string, design?: PadDesign) => void;
 }) {
   const matched = matchFormat(seed, design);
   const chainIds = matched
@@ -196,6 +198,16 @@ export function RequestBench({
     : [];
   const locked = request?.status === 'registered';
   const sameShape = design.left !== 'empty' && design.left === design.right && design.targets[0] === design.targets[1];
+  const [grouped, setGrouped] = useState<string[]>([]);
+  const groupKey = request?.id ?? '';
+  const [forRequest, setForRequest] = useState(groupKey);
+  if (forRequest !== groupKey) {
+    setForRequest(groupKey);
+    setGrouped([]);
+  }
+  const toggleGroup = (id: string) =>
+    setGrouped((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+  const catalog = book.panels.filter((p) => p.id !== request?.panelId);
 
   return (
     <main className="panel list req-bench">
@@ -208,124 +220,187 @@ export function RequestBench({
           </div>
         ) : null}
       </div>
-      {!request ? (
-        <div className="req-empty">
-          <p>Create a request, design a molecule on the pad, then register the panel in Luma.</p>
-          <p className="sm">Each panel, molecule, and chain receives a UID, and the chains constrain Level 1.</p>
-        </div>
-      ) : (
-        <div className="req-body">
-          <label className="req-name">
-            Name
-            <input
-              className="search"
-              value={request.name}
-              disabled={locked}
-              onChange={(e) => onRename(e.target.value)}
-            />
-          </label>
-          <div className="req-stage">
-            <DesignPad design={design} onChange={locked ? () => undefined : onDesign} />
-            <aside className="fmt-card">
-              <h3>Format</h3>
-              <p className="nm">{matched ? matched.name : 'No catalog format yet'}</p>
-              <p className="sm">{matched ? matched.id : 'Place a building block to match a format.'}</p>
-              <div className={`status-banner ${matched && (design.fc !== 'none' || matched.fc === 'No') ? 'pass' : 'warn'}`}>
-                {!designPlaced(design)
-                  ? 'The canvas is empty.'
-                  : sameShape
-                    ? 'Symmetric arms call for a homodimeric Fc.'
-                    : 'Asymmetric arms call for a heterodimeric Fc.'}
-              </div>
-              <div className="req-targets">
-                <label>
-                  Left target
-                  <input
-                    className="search"
-                    value={design.targets[0]}
-                    disabled={locked}
-                    onChange={(e) => onTarget(0, e.target.value)}
-                  />
-                </label>
-                <label>
-                  Right target
-                  <input
-                    className="search"
-                    value={design.targets[1]}
-                    disabled={locked}
-                    onChange={(e) => onTarget(1, e.target.value)}
-                  />
-                </label>
-              </div>
-              <h3>Chains this molecule will carry</h3>
-              {chainIds.length ? (
-                <ul className="uid-list">
-                  {chainIds.map((c) => (
-                    <li key={c.uid}>
-                      <span className="mono">{c.uid}</span>
-                      <span className="sm">
-                        {c.archetype}
-                        {c.chain?.constructId ? ` · ${c.chain.constructId}` : ''}
-                        {c.chain ? ` · ${c.chain.role === 'reagent' ? 'reagent' : 'campaign'}` : ''}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="sm">Chain UIDs appear once the format matches.</p>
-              )}
-              <div className="req-actions">
-                <button className="btn" type="button" disabled={locked || !matched} onClick={onAdd}>
-                  Add molecule
-                </button>
-                <button
-                  className="btn primary"
-                  type="button"
-                  disabled={locked || !request.drafts.some((d) => d.formatId)}
-                  onClick={onRegister}
-                >
-                  {locked ? 'Registered' : 'Register panel in Luma'}
-                </button>
-              </div>
-            </aside>
+      <div className="req-body">
+        {!request ? (
+          <div className="req-empty">
+            <p>These are the BioGlyph panels already in Luma. Open one, or create a request and design molecules to group into a new panel.</p>
+            <p className="sm">Each panel, molecule, and chain has a UID. A grouped set of molecules is what receives the panel UID.</p>
           </div>
-          <section className="mol-list">
-            <h3>
-              Molecules <span className="src-n">{request.drafts.length}</span>
-            </h3>
-            {request.drafts.length ? (
-              request.drafts.map((draft) => (
-                <button key={draft.id} type="button" className="mol-row" onClick={() => onOpenMolecule(draft)}>
-                  <PaletteMini design={draft.design} />
-                  <span>
-                    <span className="nm">{draft.name}</span>
-                    <span className="sm">
-                      {draft.id.startsWith('MOL-') ? draft.id : 'UID on registration'}
-                      {draft.formatId ? ` · ${draft.formatId}` : ' · unmatched'}
-                      {' · '}
-                      {bbDef(draft.design.left).label}/{bbDef(draft.design.right).label}
-                    </span>
+        ) : (
+          <>
+            <label className="req-name">
+              Name
+              <input
+                className="search"
+                value={request.name}
+                disabled={locked}
+                onChange={(e) => onRename(e.target.value)}
+              />
+            </label>
+            <section className="glyph-panel working">
+              <div className="glyph-head">
+                <h3>
+                  {request.name}{' '}
+                  <span className="src-n">{request.drafts.length}</span>
+                </h3>
+                <span className="sm">{request.panelId ?? 'Panel UID assigned when this group is registered'}</span>
+              </div>
+              {request.drafts.length ? (
+                <div className="glyph-grid">
+                  {request.drafts.map((draft) => (
+                    <MoleculeCard
+                      key={draft.id}
+                      name={draft.name}
+                      uid={draft.id.startsWith('MOL-') ? draft.id : 'UID on registration'}
+                      note={draft.formatId ?? 'unmatched'}
+                      design={draft.design}
+                      selected={grouped.includes(draft.id)}
+                      onOpen={() => onOpenMolecule(draft)}
+                      onToggle={locked ? undefined : () => toggleGroup(draft.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="sm">Design a molecule below, then add it to this panel.</p>
+              )}
+              {!locked ? (
+                <div className="req-actions">
+                  <button className="btn" type="button" disabled={!matched} onClick={onAdd}>
+                    Add molecule
+                  </button>
+                  <button
+                    className="btn primary"
+                    type="button"
+                    disabled={!grouped.some((id) => request.drafts.find((d) => d.id === id)?.formatId)}
+                    onClick={() => onRegister(grouped)}
+                  >
+                    Assign panel UID{grouped.length ? ` · ${grouped.length}` : ''}
+                  </button>
+                </div>
+              ) : null}
+            </section>
+            <div className="req-stage">
+              <DesignPad design={design} onChange={locked ? () => undefined : onDesign} />
+              <aside className="fmt-card">
+                <h3>Format</h3>
+                <p className="nm">{matched ? matched.name : 'No catalog format yet'}</p>
+                <p className="sm">{matched ? matched.id : 'Place a building block to match a format.'}</p>
+                <div className={`status-banner ${matched && (design.fc !== 'none' || matched.fc === 'No') ? 'pass' : 'warn'}`}>
+                  {!designPlaced(design)
+                    ? 'The canvas is empty.'
+                    : sameShape
+                      ? 'Symmetric arms call for a homodimeric Fc.'
+                      : 'Asymmetric arms call for a heterodimeric Fc.'}
+                </div>
+                <div className="req-targets">
+                  <label>
+                    Left target
+                    <input
+                      className="search"
+                      value={design.targets[0]}
+                      disabled={locked}
+                      onChange={(e) => onTarget(0, e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Right target
+                    <input
+                      className="search"
+                      value={design.targets[1]}
+                      disabled={locked}
+                      onChange={(e) => onTarget(1, e.target.value)}
+                    />
+                  </label>
+                </div>
+                <h3>Chains this molecule will carry</h3>
+                {chainIds.length ? (
+                  <ul className="uid-list">
+                    {chainIds.map((c) => (
+                      <li key={c.uid}>
+                        <span className="mono">{c.uid}</span>
+                        <span className="sm">
+                          {c.archetype}
+                          {c.chain?.constructId ? ` · ${c.chain.constructId}` : ''}
+                          {c.chain ? ` · ${c.chain.role === 'reagent' ? 'reagent' : 'campaign'}` : ''}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="sm">Chain UIDs appear once the format matches.</p>
+                )}
+              </aside>
+            </div>
+          </>
+        )}
+        <section className="glyph-board">
+          <h3>Panels in Luma</h3>
+          {catalog.map((panel) => {
+            const molecules = book.molecules.filter((m) => m.panelId === panel.id);
+            return (
+              <article key={panel.id} className="glyph-panel">
+                <div className="glyph-head">
+                  <h3>
+                    {panel.name} <span className="mono">{panel.id}</span>
+                  </h3>
+                  <span className="sm">
+                    {molecules.length} molecule{molecules.length === 1 ? '' : 's'} · {panel.chainIds.length} chain
+                    {panel.chainIds.length === 1 ? '' : 's'}
                   </span>
-                </button>
-              ))
-            ) : (
-              <p className="sm">No molecules yet. Design one and add it to this request.</p>
-            )}
-          </section>
-        </div>
-      )}
+                </div>
+                <div className="glyph-grid">
+                  {molecules.map((molecule) => (
+                    <MoleculeCard
+                      key={molecule.id}
+                      name={molecule.name}
+                      uid={molecule.id}
+                      note={molecule.formatId}
+                      design={molecule.design}
+                      onOpen={() => onOpenRequest(panel.requestId, molecule.design)}
+                    />
+                  ))}
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      </div>
     </main>
   );
 }
 
-function PaletteMini({ design }: { design: PadDesign }) {
-  const bb = design.left !== 'empty' ? design.left : design.right !== 'empty' ? design.right : design.fc === 'none' ? 'empty' : design.fc;
-  if (bb === 'empty') return <span className="mol-glyph" />;
+function MoleculeCard({
+  name,
+  uid,
+  note,
+  design,
+  selected,
+  onOpen,
+  onToggle,
+}: {
+  name: string;
+  uid: string;
+  note: string;
+  design: PadDesign;
+  selected?: boolean;
+  onOpen: () => void;
+  onToggle?: () => void;
+}) {
   return (
-    <span className="mol-glyph" aria-hidden="true">
-      {bbDef(design.left).label.slice(0, 1)}
-      {design.fc === 'heterofc' ? '≠' : design.fc === 'homofc' ? '=' : '·'}
-      {bbDef(design.right).label.slice(0, 1)}
-    </span>
+    <div className={`glyph-card${selected ? ' on' : ''}`}>
+      <button type="button" className="glyph-open" onClick={onOpen}>
+        <MoleculeGlyph design={design} title={name} />
+        <span className="nm">{name}</span>
+        <span className="sm">
+          {uid} · {note}
+        </span>
+      </button>
+      {onToggle ? (
+        <label className="glyph-pick">
+          <input type="checkbox" checked={!!selected} onChange={onToggle} />
+          Group
+        </label>
+      ) : null}
+    </div>
   );
 }
