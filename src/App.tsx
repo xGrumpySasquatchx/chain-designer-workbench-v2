@@ -5,6 +5,7 @@ import panelsJson from './data/panels.json';
 import seedJson from './data/seed.json';
 import vregionsJson from './data/vregions.json';
 import { BuildPanel } from './components/BuildPanel';
+import { ExpressionBench, ExpressionRail } from './components/ExpressionBench';
 import { FacetRail, type FacetDef } from './components/FacetRail';
 import { InventoryCell } from './components/InventoryCell';
 import { LevelTabs } from './components/LevelTabs';
@@ -14,6 +15,16 @@ import { PanelPick, RequestBench, RequestRail } from './components/RequestBench'
 import { VariableRegions } from './components/VariableRegions';
 import { VLibraryRail } from './components/VLibraryRail';
 import { EMPTY_DESIGN, matchFormat } from './model/design';
+import {
+  CODON_METHODS,
+  TARGET_CLASSES,
+  codonTableName,
+  hostById,
+  planReady,
+  registerExpression,
+  registrationMatches,
+  withHost,
+} from './model/expression';
 import { stockStatus } from './model/inventory';
 import {
   archetypeIdsOf,
@@ -31,6 +42,7 @@ import {
   addToLibrary,
   applyClones,
   applyPanels,
+  assignedInserts,
   clonesOf,
   fillAssignFromCatalog,
   insertsByVector,
@@ -306,6 +318,7 @@ export default function App() {
     var: '',
     mut: '',
     con: '',
+    exp: '',
   });
   const [facetSel, setFacetSel] = useState<Record<Grain, Record<string, Set<string>>>>({
     fmt: {},
@@ -313,6 +326,7 @@ export default function App() {
     var: {},
     mut: {},
     con: {},
+    exp: {},
   });
   const [pad, setPad] = useState<PadDesign>(EMPTY_DESIGN);
   const [panelQuery, setPanelQuery] = useState('');
@@ -326,8 +340,10 @@ export default function App() {
   }, [state]);
 
   useEffect(() => {
-    const hue = { fmt: '--fmt', chn: '--chn', var: '--vr', mut: '--mut', con: '--con' }[state.grain];
-    const bg = { fmt: '--fmt-bg', chn: '--chn-bg', var: '--vr-bg', mut: '--mut-bg', con: '--con-bg' }[state.grain];
+    const hue = { fmt: '--fmt', chn: '--chn', var: '--vr', mut: '--mut', con: '--con', exp: '--exp' }[state.grain];
+    const bg = { fmt: '--fmt-bg', chn: '--chn-bg', var: '--vr-bg', mut: '--mut-bg', con: '--con-bg', exp: '--exp-bg' }[
+      state.grain
+    ];
     document.documentElement.style.setProperty('--grain', `var(${hue})`);
     document.documentElement.style.setProperty('--grain-bg', `var(${bg})`);
   }, [state.grain]);
@@ -402,6 +418,7 @@ export default function App() {
   const grain = state.grain;
   const isVar = grain === 'var';
   const isReq = grain === 'fmt';
+  const isExp = grain === 'exp';
   const openRequest = book.requests.find((r) => r.id === state.activeRequestId) ?? null;
   const facets =
     grain === 'fmt' ? FMT_FACETS : grain === 'chn' ? CHN_FACETS : grain === 'mut' ? MUT_FACETS : CON_FACETS;
@@ -497,6 +514,67 @@ export default function App() {
           ? [r.id, r.name, r.purpose, r.positions, r.numbering, r.domain, r.carried, r.notes, r.partner].join(' ')
           : [r.id, r.role, r.insert, r.module, r.eng, r.note, r.sel, r.stock, r.vnames].join(' ');
   const liveFacets = grain === 'fmt' ? facetSel.fmt : pruneFacetSel(facetSel[grain] ?? {}, railRows);
+  const expressionRows = slots.flatMap((slot) => {
+    const named = assignedInserts([slot], state.variants, state.assign);
+    if (named.length) {
+      return named.map((item) => ({
+        key: item.id,
+        insert: item.label,
+        label: item.note,
+        domain: slot.t,
+        vector: slot.vec,
+      }));
+    }
+    return [
+      {
+        key: slot.key,
+        insert: slot.label || slot.t,
+        label: slot.note,
+        domain: slot.t,
+        vector: slot.vec,
+      },
+    ];
+  });
+  const expressionVectors = [...model.buildV].sort();
+  const expressionRegistered = state.expressionRegistrations.some((record) =>
+    registrationMatches(record, state.expression, expressionVectors),
+  );
+  const canRegister = planReady(state.expression) && expressionVectors.length > 0 && !expressionRegistered;
+  const registerTitle = !planReady(state.expression)
+    ? 'Choose an expression system and a codon optimization method on Level 5.'
+    : expressionVectors.length === 0
+      ? 'Include a chain on Level 1 so its constructs can be registered.'
+      : expressionRegistered
+        ? 'These constructs are already registered with this expression choice.'
+        : 'Register the current constructs with this expression system and codon method.';
+  const expressionItems = [
+    ...(state.expression.host
+      ? [
+          {
+            id: 'plan',
+            label: hostById(state.expression.host).name,
+            note: [
+              TARGET_CLASSES.find((target) => target.id === state.expression.targetClass)?.label ?? '',
+              state.expression.codon
+                ? (CODON_METHODS.find((method) => method.id === state.expression.codon)?.label ?? '')
+                : 'Choose a codon method',
+              state.expression.codonTable
+                ? codonTableName(state.expression.host, state.expression.codonTable)
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' · '),
+          },
+        ]
+      : []),
+    ...state.expressionRegistrations.map((record) => ({
+      id: record.id,
+      label: record.id,
+      note: `${hostById(record.host).name} · ${
+        CODON_METHODS.find((method) => method.id === record.codon)?.label ?? ''
+      } · ${record.vectorIds.length} construct${record.vectorIds.length === 1 ? '' : 's'}`,
+    })),
+  ];
 
   return (
     <>
@@ -510,9 +588,16 @@ export default function App() {
           seed={seed}
           builds={variantList(state.variants).length}
           requestCount={`${state.requests.filter((r) => r.status === 'draft').length} drafts · ${book.panels.length} panels`}
+          expressionCount={
+            state.expression.host
+              ? `${hostById(state.expression.host).name}${
+                  state.expressionRegistrations.length ? ` · ${state.expressionRegistrations.length}` : ''
+                }`
+              : 'choose'
+          }
           onGrain={(g) => setState((s) => ({ ...s, grain: g }))}
         />
-        {isVar || isReq ? null : (
+        {isVar || isReq || isExp ? null : (
           <input
             className="tool-filter"
             type="search"
@@ -547,7 +632,15 @@ export default function App() {
                 ? `${slots.length} slots, ${variantList(state.variants).length || 1} builds`
                 : grain === 'mut'
                   ? `${model.buildM.size} in build, ${model.reachM.size} available`
-                  : `${model.buildV.size} in build, ${model.reachV.size} available`}
+                  : grain === 'exp'
+                    ? state.expression.host
+                      ? `${hostById(state.expression.host).name}${
+                          state.expression.codon
+                            ? ` · ${CODON_METHODS.find((method) => method.id === state.expression.codon)?.label}`
+                            : ' · choose a codon method'
+                        }`
+                      : 'Choose a target class and an expression system'
+                    : `${model.buildV.size} in build, ${model.reachV.size} available`}
         </span>
         <span className="stat-grow" />
         <span>EU for Fc and CH1 · Kabat / IMGT for V domains · selections stay in this browser</span>
@@ -623,6 +716,24 @@ export default function App() {
             }}
             onOpen={openRequestById}
             onDeleteDraft={deleteDraft}
+          />
+        ) : isExp ? (
+          <ExpressionRail
+            plan={state.expression}
+            expanded={sides.layout.leftOpen}
+            onFold={() => sides.toggle('left')}
+            fold={<FoldBtn side="left" open={sides.layout.leftOpen} onClick={() => sides.toggle('left')} />}
+            grip={
+              <ResizeGrip
+                side="left"
+                onDrag={(e) => sides.startResize('left', e)}
+                onReset={() => sides.resetWidth('left')}
+              />
+            }
+            onTarget={(targetClass) =>
+              setState((s) => ({ ...s, expression: { ...s.expression, targetClass } }))
+            }
+            onHost={(host) => setState((s) => ({ ...s, expression: withHost(s.expression, host) }))}
           />
         ) : (
           <FacetRail
@@ -730,6 +841,20 @@ export default function App() {
             }}
             onDeleteDraft={deleteDraft}
           />
+        ) : isExp ? (
+          <ExpressionBench
+            plan={state.expression}
+            slots={expressionRows}
+            registrations={state.expressionRegistrations}
+            onTarget={(targetClass) =>
+              setState((s) => ({ ...s, expression: { ...s.expression, targetClass } }))
+            }
+            onHost={(host) => setState((s) => ({ ...s, expression: withHost(s.expression, host) }))}
+            onCodonTable={(codonTable) =>
+              setState((s) => ({ ...s, expression: { ...s.expression, codonTable } }))
+            }
+            onCodon={(codon) => setState((s) => ({ ...s, expression: { ...s.expression, codon } }))}
+          />
         ) : isVar ? (
           <VariableRegions
             slots={slots}
@@ -781,6 +906,23 @@ export default function App() {
                   .map((m) => ({ id: m.id, label: m.name, note: `${m.id} · ${m.formatId}` }))
               : undefined
           }
+          expressionItems={expressionItems}
+          canRegister={canRegister}
+          registered={expressionRegistered}
+          registerTitle={registerTitle}
+          onRegister={() => {
+            const inserts = expressionRows.map((row) => row.insert);
+            setState((s) => {
+              const record = registerExpression(
+                s.expressionRegistrations,
+                s.expression,
+                expressionVectors,
+                inserts,
+              );
+              if (!record) return s;
+              return { ...s, expressionRegistrations: [record, ...s.expressionRegistrations] };
+            });
+          }}
           expanded={sides.layout.rightOpen}
           onFold={() => sides.toggle('right')}
           fold={<FoldBtn side="right" open={sides.layout.rightOpen} onClick={() => sides.toggle('right')} />}
@@ -795,7 +937,7 @@ export default function App() {
           onRuleOut={(id) => setMark('con', id, 'out')}
           onRestore={(g, id) =>
             setState((s) => {
-              if (g === 'var') return s;
+              if (g !== 'fmt' && g !== 'chn' && g !== 'con' && g !== 'mut') return s;
               const next = cloneSel(s.sel);
               delete next[g][id];
               return { ...s, sel: next };

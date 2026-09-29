@@ -18,6 +18,7 @@ function SelectionFolders({
   library,
   mutations,
   requestItems,
+  expressionItems,
 }: {
   seed: Seed;
   model: Model;
@@ -26,9 +27,10 @@ function SelectionFolders({
   library: string;
   mutations: Mutation[];
   requestItems?: { id: string; label: string; note: string }[];
+  expressionItems?: { id: string; label: string; note: string }[];
 }) {
   const [open, setOpen] = useState<Set<string>>(
-    () => new Set(['fmt', 'chn', 'var', 'mut', 'con']),
+    () => new Set(['fmt', 'chn', 'var', 'mut', 'con', 'exp']),
   );
   const toggle = (key: string) => {
     setOpen((prev) => {
@@ -95,6 +97,12 @@ function SelectionFolders({
         .filter((v) => model.buildV.has(v.id))
         .map((v) => ({ id: v.id, label: v.id, note: v.insert })),
     },
+    {
+      k: 'exp',
+      name: 'Expression',
+      empty: 'Choose a host and a codon method on Level 5.',
+      items: expressionItems ?? [],
+    },
   ];
 
   return (
@@ -133,6 +141,11 @@ export function BuildPanel({
   mutations,
   presets,
   requestItems,
+  expressionItems,
+  canRegister,
+  registered,
+  registerTitle,
+  onRegister,
   onReset,
   onRuleOut,
   onRestore,
@@ -153,6 +166,11 @@ export function BuildPanel({
   mutations: Mutation[];
   presets: Preset[];
   requestItems?: { id: string; label: string; note: string }[];
+  expressionItems?: { id: string; label: string; note: string }[];
+  canRegister: boolean;
+  registered: boolean;
+  registerTitle: string;
+  onRegister: () => void;
   onReset: () => void;
   onRuleOut: (id: string) => void;
   onRestore: (grain: Grain, id: string) => void;
@@ -229,6 +247,7 @@ export function BuildPanel({
             library={library}
             mutations={mutations}
             requestItems={requestItems}
+            expressionItems={expressionItems}
           />
           {model.conflicts.slice(0, 4).map((c) => (
             <div className="note" key={c}>
@@ -251,25 +270,40 @@ export function BuildPanel({
             </div>
           ) : null}
           <div className="sec" style={{ borderBottom: 0 }}>
-            <button
-              className="btn primary"
-              type="button"
-              onClick={() =>
-                flash(
-                  'Copy build list',
-                  buildListText(
-                    seed,
-                    model.inF,
-                    model.buildV,
-                    variants,
-                    outs.map(([, id]) => id),
-                    model.conflicts,
-                  ),
-                )
-              }
-            >
-              {copied === 'Copy build list' ? 'Copied' : 'Copy build list'}
-            </button>
+            <div className="row">
+              <button
+                className="btn primary"
+                type="button"
+                disabled={!canRegister}
+                title={registerTitle}
+                onClick={() => {
+                  onRegister();
+                  setCopied('Register constructs');
+                  window.setTimeout(() => setCopied(''), 1600);
+                }}
+              >
+                {copied === 'Register constructs' || registered ? 'Registered' : 'Register constructs'}
+              </button>
+              <button
+                className="btn"
+                type="button"
+                onClick={() =>
+                  flash(
+                    'Copy build list',
+                    buildListText(
+                      seed,
+                      model.inF,
+                      model.buildV,
+                      variants,
+                      outs.map(([, id]) => id),
+                      model.conflicts,
+                    ),
+                  )
+                }
+              >
+                {copied === 'Copy build list' ? 'Copied' : 'Copy build list'}
+              </button>
+            </div>
           </div>
         </>
       ) : null}
@@ -322,6 +356,19 @@ export function BuildPanel({
               onClick={() => flash('Copy as CSV', gaalCsv(seed, model.buildV, variants, assign))}
             >
               {copied === 'Copy as CSV' ? 'Copied' : 'Copy as CSV'}
+            </button>
+            <button
+              className="btn sm primary"
+              type="button"
+              disabled={!canRegister}
+              title={registerTitle}
+              onClick={() => {
+                onRegister();
+                setCopied('Register constructs');
+                window.setTimeout(() => setCopied(''), 1600);
+              }}
+            >
+              {copied === 'Register constructs' || registered ? 'Registered' : 'Register constructs'}
             </button>
           </div>
           <p style={{ margin: '7px 0 0', fontSize: 11.5, color: 'var(--ink-3)' }}>

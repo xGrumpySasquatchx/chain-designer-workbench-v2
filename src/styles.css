@@ -9,6 +9,7 @@
   --vr:#8A5A12; --vr-bg:#F6EEDF;
   --con:#7B3F66; --con-bg:#F2E7EE;
   --mut:#5E4A8A; --mut-bg:#EEE8F5;
+  --exp:#0E6E8C; --exp-bg:#E4F3F6;
   --in:#1B6B45; --in-bg:#DDEFE4;
   --out:#9C3A2C; --out-bg:#F6E3DF;
   --warn:#8A6410; --warn-bg:#F8EFD8;
@@ -23,7 +24,7 @@
     --ink:#E6EDF1; --ink-2:#A6B4BF; --ink-3:#71808C;
     --rule:#2A3742; --rule-2:#212C35;
     --fmt:#78AEDD; --fmt-bg:#1B2D3D; --chn:#5FC5A2; --chn-bg:#16302A;
-    --vr:#D9B46A; --vr-bg:#2E2617; --mut:#B6A2E0; --mut-bg:#2A2238; --con:#D096BB; --con-bg:#30212B; --in:#69C295; --in-bg:#173024;
+    --vr:#D9B46A; --vr-bg:#2E2617; --mut:#B6A2E0; --mut-bg:#2A2238; --con:#D096BB; --con-bg:#30212B; --exp:#7EC8DC; --exp-bg:#163038; --in:#69C295; --in-bg:#173024;
     --out:#E0897A; --out-bg:#331D19; --warn:#D6AC55; --warn-bg:#2E2718;
   }
 }
@@ -32,7 +33,7 @@
   --ink:#E6EDF1; --ink-2:#A6B4BF; --ink-3:#71808C;
   --rule:#2A3742; --rule-2:#212C35;
   --fmt:#78AEDD; --fmt-bg:#1B2D3D; --chn:#5FC5A2; --chn-bg:#16302A;
-  --vr:#D9B46A; --vr-bg:#2E2617; --mut:#B6A2E0; --mut-bg:#2A2238; --con:#D096BB; --con-bg:#30212B; --in:#69C295; --in-bg:#173024;
+  --vr:#D9B46A; --vr-bg:#2E2617; --mut:#B6A2E0; --mut-bg:#2A2238; --con:#D096BB; --con-bg:#30212B; --exp:#7EC8DC; --exp-bg:#163038; --in:#69C295; --in-bg:#173024;
   --out:#E0897A; --out-bg:#331D19; --warn:#D6AC55; --warn-bg:#2E2718;
 }
 *,*::before,*::after{box-sizing:inherit}
@@ -61,7 +62,7 @@ body{margin:0; background:var(--paper); color:var(--ink);
 .tool .tool-ct.plain{padding-left:0}
 .tool[aria-selected="true"]{background:var(--card); border-color:var(--rule); box-shadow:inset 0 -3px 0 var(--sc)}
 .tool:focus-visible{outline:2px solid var(--grain); outline-offset:-2px}
-.tool[data-g="fmt"]{--sc:var(--fmt)} .tool[data-g="chn"]{--sc:var(--chn)} .tool[data-g="var"]{--sc:var(--vr)} .tool[data-g="mut"]{--sc:var(--mut)} .tool[data-g="con"]{--sc:var(--con)}
+.tool[data-g="fmt"]{--sc:var(--fmt)} .tool[data-g="chn"]{--sc:var(--chn)} .tool[data-g="var"]{--sc:var(--vr)} .tool[data-g="mut"]{--sc:var(--mut)} .tool[data-g="con"]{--sc:var(--con)} .tool[data-g="exp"]{--sc:var(--exp)}
 .tool-filter{flex:0 1 220px; min-width:120px; padding:5px 8px; border:1px solid var(--rule); border-radius:3px;
   background:var(--card); color:var(--ink); font:inherit; font-size:12.5px}
 .tool-filter:focus{outline:2px solid var(--grain); outline-offset:-1px; border-color:transparent}
@@ -330,3 +331,26 @@ textarea.search{min-height:66px; resize:vertical; font-family:"IBM Plex Mono",mo
 .status-banner.warn{background:var(--warn-bg); color:var(--warn)}
 .pair-note{margin:8px 0 0; font-size:11.5px; color:var(--ink-3)}
 .dpad-wrap{min-width:0}
+
+.exp-lead{margin:0; color:var(--ink-2)}
+.glyph-panel h3{margin:0 0 8px; font-size:13px}
+.exp-seg{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px}
+.exp-seg button{appearance:none; border:1px solid var(--rule); background:var(--card); color:var(--ink);
+  font:inherit; font-size:12.5px; border-radius:4px; padding:6px 10px; cursor:pointer}
+.exp-seg button.on{background:var(--grain); border-color:transparent; color:#fff; font-weight:600}
+.exp-table-wrap{overflow:auto; margin-bottom:8px}
+.exp-table{width:100%; border-collapse:collapse; min-width:760px; font-size:12px}
+.exp-table th,.exp-table td{border:1px solid var(--rule-2); padding:6px 8px; vertical-align:top; text-align:left}
+.exp-table thead th button{appearance:none; background:transparent; border:0; padding:0; font:inherit;
+  font-weight:650; color:inherit; cursor:pointer; text-align:left}
+.exp-table thead th button span{display:block; font-weight:400; color:var(--ink-3); font-size:11px; margin-top:2px}
+.exp-table td.on,.exp-table th.on{background:var(--grain-bg)}
+.exp-table tr.exp-sect td{background:var(--tool); font-weight:650; letter-spacing:.02em}
+.exp-table tr.exp-active th{color:var(--grain)}
+.fit{display:flex; flex-direction:column; gap:2px; font-weight:650}
+.fit-good{color:var(--in)} .fit-moderate{color:var(--warn)} .fit-poor{color:var(--out)}
+.fit-note{font-weight:400; color:var(--ink-2); font-size:11px}
+.exp-methods{display:flex; flex-direction:column; gap:6px; margin:8px 0 12px}
+.exp-method{display:flex; gap:8px; align-items:flex-start; border:1px solid var(--rule); border-radius:6px; padding:8px; cursor:pointer}
+.exp-method.on{border-color:var(--grain); background:var(--grain-bg)}
+.exp-method .sm{max-width:none}

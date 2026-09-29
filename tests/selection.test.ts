@@ -10,6 +10,7 @@ import { applyMutations, mutationRelevant, specificVectorIds } from '../src/mode
 import { EMPTY_DESIGN, joinCTerm, matchFormat, removeCTerm, setBlockTarget } from '../src/model/design';
 import { archetypeIdsOf, assembleBook, chainUid, registerRequest } from '../src/model/luma';
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
+import { EMPTY_EXPRESSION, registerExpression, withHost } from '../src/model/expression';
 import { buildSlots, slotsFor } from '../src/model/slots';
 import { facetTokens, rowHasFacet } from '../src/model/facets';
 import type { InventoryBook, Mutation, Seed, Sel, VPanel, VRegion } from '../src/model/types';
@@ -558,6 +559,33 @@ check(
     grouped.remaining[0].id === 'd2' &&
     grouped.request.id !== 'REQ-R002',
   `${grouped?.request.id} · ${grouped?.remaining.map((d) => d.id).join(',')}`,
+);
+
+const secreted = withHost({ ...EMPTY_EXPRESSION, targetClass: 'secreted', codon: 'adapt' }, 'mammalian');
+const first = registerExpression([], secreted, ['pDM-HC-IgG1-WT', 'pDM-LC-kappa-WT'], ['VH', 'VL']);
+const again = registerExpression(first ? [first] : [], secreted, ['pDM-LC-kappa-WT', 'pDM-HC-IgG1-WT'], ['VH', 'VL']);
+const recoded = registerExpression(
+  first ? [first] : [],
+  { ...secreted, codon: 'harmonize' },
+  ['pDM-HC-IgG1-WT', 'pDM-LC-kappa-WT'],
+  ['VH', 'VL'],
+);
+check(
+  'expression registration records the host and codon choice once',
+  !!first &&
+    first.id === 'EXP-001' &&
+    first.host === 'mammalian' &&
+    first.codonTable === 'human' &&
+    first.vectorIds.join(',') === 'pDM-HC-IgG1-WT,pDM-LC-kappa-WT' &&
+    again === null &&
+    recoded?.id === 'EXP-002' &&
+    recoded.codon === 'harmonize',
+  `${first?.id} · ${recoded?.id}`,
+);
+const membrane = withHost({ ...EMPTY_EXPRESSION, targetClass: 'membrane' }, 'ecoli');
+check(
+  'a membrane target keeps E. coli selectable and names its codon table',
+  membrane.host === 'ecoli' && membrane.codonTable === 'ecoli-k12',
 );
 
 console.log('\nAll selection checks passed.');

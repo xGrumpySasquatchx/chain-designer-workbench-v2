@@ -1,5 +1,27 @@
 export type Tier = 1 | 2 | 3 | 4 | 5 | 6;
-export type Grain = 'fmt' | 'chn' | 'var' | 'mut' | 'con';
+export type Grain = 'fmt' | 'chn' | 'var' | 'mut' | 'con' | 'exp';
+
+export type TargetClass = 'secreted' | 'intracellular' | 'membrane';
+export type HostId = 'ecoli' | 'yeast' | 'insect' | 'mammalian' | 'cellfree';
+export type CodonMethod = 'adapt' | 'harmonize' | 'rare' | 'keep';
+
+export interface ExpressionPlan {
+  targetClass: TargetClass | null;
+  host: HostId | null;
+  codonTable: string | null;
+  codon: CodonMethod | null;
+}
+
+export interface ExpressionRegistration {
+  id: string;
+  targetClass: TargetClass;
+  host: HostId;
+  codonTable: string;
+  codon: CodonMethod;
+  vectorIds: string[];
+  inserts: string[];
+  registeredAt: string;
+}
 export type ArmId = 'left' | 'right';
 export type BbKind =
   | 'fab'
@@ -272,6 +294,8 @@ export interface State {
   requests: RequestDoc[];
   userPanels: LumaPanel[];
   userMolecules: LumaMolecule[];
+  expression: ExpressionPlan;
+  expressionRegistrations: ExpressionRegistration[];
 }
 
 export interface Model {

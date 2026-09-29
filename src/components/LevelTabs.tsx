@@ -7,6 +7,7 @@ const STEPS: { g: Grain; lvl: string; name: string }[] = [
   { g: 'var', lvl: '2', name: 'Variable regions' },
   { g: 'mut', lvl: '3', name: 'Mutations' },
   { g: 'con', lvl: '4', name: 'Construct' },
+  { g: 'exp', lvl: '5', name: 'Expression' },
 ];
 
 export function LevelTabs({
@@ -15,6 +16,7 @@ export function LevelTabs({
   seed,
   builds,
   requestCount,
+  expressionCount,
   onGrain,
 }: {
   grain: Grain;
@@ -22,6 +24,7 @@ export function LevelTabs({
   seed: Seed;
   builds: number;
   requestCount: string;
+  expressionCount: string;
   onGrain: (g: Grain) => void;
 }) {
   const slots = buildSlots(seed, model.buildV).length;
@@ -31,6 +34,7 @@ export function LevelTabs({
     var: `${slots} slot${slots === 1 ? '' : 's'}${builds ? ` · ${builds}` : ''}`,
     mut: `${model.buildM.size} / ${model.reachM.size}`,
     con: `${model.buildV.size} / ${model.reachV.size}`,
+    exp: expressionCount,
   };
 
   return (

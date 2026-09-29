@@ -1,5 +1,21 @@
+import { EMPTY_EXPRESSION } from '../model/expression';
 import { emptySel } from '../model/selection';
-import type { Grain, LumaMolecule, LumaPanel, RequestDoc, State } from '../model/types';
+import type {
+  CodonMethod,
+  ExpressionPlan,
+  ExpressionRegistration,
+  Grain,
+  HostId,
+  LumaMolecule,
+  LumaPanel,
+  RequestDoc,
+  State,
+  TargetClass,
+} from '../model/types';
+
+const TARGETS: TargetClass[] = ['secreted', 'intracellular', 'membrane'];
+const HOST_IDS: HostId[] = ['ecoli', 'yeast', 'insect', 'mammalian', 'cellfree'];
+const CODONS: CodonMethod[] = ['adapt', 'harmonize', 'rare', 'keep'];
 
 const KEY = 'protein-chain-workbench-v2';
 
@@ -18,6 +34,8 @@ export function defaultState(): State {
     requests: [],
     userPanels: [],
     userMolecules: [],
+    expression: EMPTY_EXPRESSION,
+    expressionRegistrations: [],
   };
 }
 
@@ -35,7 +53,14 @@ export function loadState(): State {
         mut: { ...emptySel().mut, ...r.sel.mut },
       };
     }
-    if (r.grain === 'fmt' || r.grain === 'chn' || r.grain === 'var' || r.grain === 'mut' || r.grain === 'con') {
+    if (
+      r.grain === 'fmt' ||
+      r.grain === 'chn' ||
+      r.grain === 'var' ||
+      r.grain === 'mut' ||
+      r.grain === 'con' ||
+      r.grain === 'exp'
+    ) {
       base.grain = r.grain as Grain;
     }
     if (typeof r.variants === 'string') base.variants = r.variants;
@@ -49,6 +74,10 @@ export function loadState(): State {
     if (Array.isArray(r.requests)) base.requests = r.requests.filter(isRequest);
     if (Array.isArray(r.userPanels)) base.userPanels = r.userPanels.filter(isPanel);
     if (Array.isArray(r.userMolecules)) base.userMolecules = r.userMolecules.filter(isMolecule);
+    if (isPlan(r.expression)) base.expression = r.expression;
+    if (Array.isArray(r.expressionRegistrations)) {
+      base.expressionRegistrations = r.expressionRegistrations.filter(isRegistration);
+    }
   } catch {
     return defaultState();
   }
@@ -65,6 +94,37 @@ function isPanel(value: unknown): value is LumaPanel {
   if (!value || typeof value !== 'object') return false;
   const p = value as LumaPanel;
   return typeof p.id === 'string' && Array.isArray(p.formatIds) && Array.isArray(p.chainIds);
+}
+
+function oneOf<T extends string>(value: unknown, list: readonly T[]): T | null {
+  return typeof value === 'string' && (list as readonly string[]).includes(value) ? (value as T) : null;
+}
+
+function isPlan(value: unknown): value is ExpressionPlan {
+  if (!value || typeof value !== 'object') return false;
+  const plan = value as ExpressionPlan;
+  const targetOk = plan.targetClass === null || oneOf(plan.targetClass, TARGETS) !== null;
+  const hostOk = plan.host === null || oneOf(plan.host, HOST_IDS) !== null;
+  const codonOk = plan.codon === null || oneOf(plan.codon, CODONS) !== null;
+  const tableOk = plan.codonTable === null || typeof plan.codonTable === 'string';
+  return targetOk && hostOk && codonOk && tableOk;
+}
+
+function isRegistration(value: unknown): value is ExpressionRegistration {
+  if (!value || typeof value !== 'object') return false;
+  const record = value as ExpressionRegistration;
+  return (
+    typeof record.id === 'string' &&
+    oneOf(record.targetClass, TARGETS) !== null &&
+    oneOf(record.host, HOST_IDS) !== null &&
+    typeof record.codonTable === 'string' &&
+    oneOf(record.codon, CODONS) !== null &&
+    Array.isArray(record.vectorIds) &&
+    record.vectorIds.every((id) => typeof id === 'string') &&
+    Array.isArray(record.inserts) &&
+    record.inserts.every((id) => typeof id === 'string') &&
+    typeof record.registeredAt === 'string'
+  );
 }
 
 function isMolecule(value: unknown): value is LumaMolecule {
