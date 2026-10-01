@@ -7,6 +7,7 @@ import vregionsJson from './data/vregions.json';
 import { BuildPanel } from './components/BuildPanel';
 import { ChainRatios } from './components/ChainRatios';
 import { ConstructCombinations } from './components/ConstructCombinations';
+import { ConstructLibrary } from './components/ConstructLibrary';
 import { ExpressionBench, ExpressionRail } from './components/ExpressionBench';
 import { FacetRail, type FacetDef } from './components/FacetRail';
 import { InventoryCell } from './components/InventoryCell';
@@ -24,6 +25,7 @@ import {
 } from './model/combinations';
 import { downloadPdf, textPdf } from './model/pdf';
 import { recipeLines, type RecipePanel } from './model/recipe';
+import { chooseConstruct } from './model/constructs';
 import { EMPTY_DESIGN, matchFormat } from './model/design';
 import {
   CODON_METHODS,
@@ -498,7 +500,9 @@ export default function App() {
       ? chainRows.filter((r) => !panelChains || panelChains.has(r.id))
       : grain === 'mut'
         ? (mutations as unknown as Row[]).filter((r) => !panelMutations || panelMutations.has(r.id))
-        : vectorRows.filter((r) => !panelConstructs || panelConstructs.has(r.id));
+        : vectorRows.filter(
+            (r) => !panelConstructs || panelConstructs.has(r.id) || state.sel.con[r.id] === 'in',
+          );
   const cols = grain === 'chn' ? CHN_COLS : grain === 'mut' ? MUT_COLS : CON_COLS;
   const title = !activePanel
     ? 'Select a panel'
@@ -829,6 +833,19 @@ export default function App() {
                   query={panelQuery}
                   onQuery={setPanelQuery}
                   onOpen={openPanel}
+                />
+              ) : grain === 'con' ? (
+                <ConstructLibrary
+                  vectors={seed.vectors}
+                  chains={seed.chains}
+                  buildIds={model.buildV}
+                  recommendedIds={model.claimV}
+                  onPick={(id) =>
+                    setState((s) => ({
+                      ...s,
+                      sel: { ...s.sel, con: chooseConstruct(s.sel.con, seed.chains, id, model.buildV) },
+                    }))
+                  }
                 />
               ) : null
             }

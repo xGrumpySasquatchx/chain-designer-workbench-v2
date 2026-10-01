@@ -280,6 +280,12 @@ textarea.search{min-height:66px; resize:vertical; font-family:"IBM Plex Mono",mo
 .req-del:hover{color:var(--ink); background:var(--grain-bg)}
 .req-row .nm{display:block}
 .panel-pick-list{max-height:220px; overflow:auto; margin-top:6px}
+.con-lib-list{max-height:280px; overflow:auto; margin-top:8px; display:flex; flex-direction:column; gap:6px}
+.con-lib-hit{border:1px solid var(--rule); border-radius:6px; padding:6px 8px; background:var(--card)}
+.con-lib-hit.on{background:var(--grain-bg); border-color:transparent}
+.con-lib-hit .nm{display:block; font-size:12px}
+.con-lib-hit .sm{display:block}
+.con-lib-hit .btn,.con-lib-hit .pill{margin-top:6px}
 .fmt-card{border:1px solid var(--rule); border-radius:8px; padding:10px 12px; background:var(--card)}
 .fmt-card h3{margin:12px 0 4px; font-size:12px; color:var(--ink-2)}
 .fmt-card h3:first-child{margin-top:0}

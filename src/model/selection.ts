@@ -105,6 +105,7 @@ export function resolve(seed: Seed, sel: Sel, focus?: { formats?: Set<string> })
   inC.forEach((c) => {
     const opts = (byChain[c]?.vectors ?? []).filter((v) => byVec[v] && !outV.has(v));
     if (!opts.length) return;
+    if (opts.some((v) => inV.has(v))) return;
     if (opts.length === 1) {
       claimV.add(opts[0]);
       return;

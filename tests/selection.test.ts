@@ -9,6 +9,7 @@ import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
 import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
 import { EMPTY_DESIGN, joinCTerm, matchFormat, removeCTerm, setBlockTarget } from '../src/model/design';
 import { archetypeIdsOf, assembleBook, chainUid, newestFirst, newRequest, registerRequest } from '../src/model/luma';
+import { chooseConstruct, constructElementString, searchConstructs } from '../src/model/constructs';
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
 import { EMPTY_EXPRESSION, registerExpression, withHost } from '../src/model/expression';
 import { groupConstructs, planCombinations, ungroupConstructs } from '../src/model/combinations';
@@ -758,6 +759,40 @@ check(
     recipePdf.includes('IgG mAb') &&
     recipePdf.includes('Second panel') &&
     recipePdf.includes('%%EOF'),
+);
+
+const constructById = searchConstructs(seed.vectors, 'pDM-HC-IgG1-LALAPG');
+const constructByElements = searchConstructs(seed.vectors, 'IgG1, Puromycin, L234A');
+const constructHeavy = searchConstructs(seed.vectors, 'Heavy chain');
+const constructWt = seed.vectors.find((vector) => vector.id === 'pDM-HC-IgG1-WT');
+check(
+  'construct library search matches an id, a comma-separated element list, or a collection',
+  constructById.length === 1 &&
+    constructById[0].id === 'pDM-HC-IgG1-LALAPG' &&
+    constructByElements.some((vector) => vector.id === 'pDM-HC-IgG1-LALAPG') &&
+    !constructByElements.some((vector) => vector.id === 'pDM-HC-IgG1-WT') &&
+    constructHeavy.length > 0 &&
+    constructHeavy.every((vector) => vector.role.toLowerCase().includes('heavy chain')) &&
+    !constructHeavy.some((vector) => vector.role === 'Light chain') &&
+    searchConstructs(seed.vectors, '   ').length === 0 &&
+    !!constructWt &&
+    constructElementString(constructWt).includes('IgG1') &&
+    constructElementString(constructWt).includes('Puromycin'),
+);
+const swapped = chooseConstruct({}, seed.chains, 'pDM-HC-IgG1-LALAPG', new Set(['pDM-HC-IgG1-WT']));
+const swappedModel = resolve(
+  seed,
+  selWith((s) => {
+    s.chn['CH-01'] = 'in';
+    Object.assign(s.con, swapped);
+  }),
+);
+check(
+  'choosing a library construct replaces the one already in the build on that chain',
+  swapped['pDM-HC-IgG1-LALAPG'] === 'in' &&
+    swapped['pDM-HC-IgG1-WT'] === 'out' &&
+    sortedIds(swappedModel.buildV).join(',') === 'pDM-HC-IgG1-LALAPG',
+  sortedIds(swappedModel.buildV).join(','),
 );
 
 console.log('\nAll selection checks passed.');
