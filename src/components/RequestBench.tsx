@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { designPlaced, matchFormat } from '../model/design';
-import { chainByArchetype, chainUid, wellLabel } from '../model/luma';
+import { chainByArchetype, chainUid } from '../model/luma';
 import type { LumaBook } from '../model/luma';
 import type { DraftMolecule, LumaPanel, PadDesign, RequestDoc, Seed } from '../model/types';
 import { DesignPad } from './DesignPad';
@@ -264,15 +264,6 @@ export function RequestBench({
                 <span className="sm">{request.panelId ?? 'Panel UID assigned when this group is registered'}</span>
               </div>
               {request.drafts.length ? (
-                locked && request.drafts.length > 8 ? (
-                  <WellPlate
-                    molecules={request.drafts}
-                    onOpen={(index) => {
-                      const draft = request.drafts[index];
-                      if (draft) onOpenMolecule(draft);
-                    }}
-                  />
-                ) : (
                 <div className="glyph-grid">
                   {request.drafts.map((draft) => (
                     <MoleculeCard
@@ -287,7 +278,6 @@ export function RequestBench({
                     />
                   ))}
                 </div>
-                )
               ) : (
                 <p className="sm">Design a molecule below, then add it to this panel.</p>
               )}
@@ -372,56 +362,28 @@ export function RequestBench({
                     {panel.name} <span className="mono">{panel.id}</span>
                   </h3>
                   <span className="sm">
-                    {molecules.length} unique molecule{molecules.length === 1 ? '' : 's'} on a 96-well plate · {panel.chainIds.length} chain
+                    {molecules.length} molecule{molecules.length === 1 ? '' : 's'} · {panel.chainIds.length} chain
                     {panel.chainIds.length === 1 ? '' : 's'}
                   </span>
                 </div>
-                <WellPlate
-                  molecules={molecules}
-                  onOpen={(index) => onOpenRequest(panel.requestId, molecules[index]?.design)}
-                />
+                <div className="glyph-grid">
+                  {molecules.map((molecule) => (
+                    <MoleculeCard
+                      key={molecule.id}
+                      name={molecule.name}
+                      uid={molecule.id}
+                      note={molecule.formatId}
+                      design={molecule.design}
+                      onOpen={() => onOpenRequest(panel.requestId, molecule.design)}
+                    />
+                  ))}
+                </div>
               </article>
             );
           })}
         </section>
       </div>
     </main>
-  );
-}
-
-function WellPlate({
-  molecules,
-  onOpen,
-}: {
-  molecules: { id: string; name: string }[];
-  onOpen: (index: number) => void;
-}) {
-  return (
-    <div className="plate" role="grid" aria-label={`${molecules.length} unique molecules on a 96-well plate`}>
-      {Array.from({ length: 96 }, (_, index) => {
-        const molecule = molecules[index];
-        const well = wellLabel(index);
-        if (!molecule) {
-          return (
-            <span key={well} className="well empty">
-              {well}
-            </span>
-          );
-        }
-        return (
-          <button
-            key={molecule.id}
-            type="button"
-            className="well filled"
-            title={`${well} · ${molecule.name}`}
-            aria-label={`${well} ${molecule.name}`}
-            onClick={() => onOpen(index)}
-          >
-            {well}
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
