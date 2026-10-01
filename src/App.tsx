@@ -954,12 +954,7 @@ export default function App() {
               });
             }}
             onOpenMolecule={(draft) => setPad(draft.design)}
-            onOpenRequest={(id, design) => {
-              openRequestById(id);
-              if (design) setPad(design);
-            }}
             onDeleteDraft={deleteDraft}
-            query={query.fmt}
           />
         ) : isExp ? (
           <ExpressionBench

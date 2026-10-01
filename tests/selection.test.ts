@@ -8,7 +8,7 @@ import { compileSearch, panelMatches, searchCatalog, treeCatalog } from '../src/
 import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
 import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
 import { EMPTY_DESIGN, joinCTerm, matchFormat, removeCTerm, setBlockTarget } from '../src/model/design';
-import { archetypeIdsOf, assembleBook, chainUid, newestFirst, newRequest, registerRequest } from '../src/model/luma';
+import { archetypeIdsOf, assembleBook, chainUid, newestFirst, newRequest, registerRequest, requestShelf } from '../src/model/luma';
 import { chooseConstruct, constructElementString, searchConstructs } from '../src/model/constructs';
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
 import { EMPTY_EXPRESSION, registerExpression, withHost } from '../src/model/expression';
@@ -462,6 +462,28 @@ const newest = newestFirst(
 check(
   'the request list leads with the newest panel, and a later id wins on the same day',
   newest.map((panel) => panel.id).join() === 'PN-R001,PN-029,PN-001',
+);
+const shelf = requestShelf(book.requests, (request) => request.drafts.length);
+const shelfCounts = shelf.map((request) => request.drafts.length);
+const withFresh = requestShelf(
+  [
+    ...book.requests.map((request) => ({ id: request.id, createdAt: request.createdAt, n: request.drafts.length })),
+    { id: 'REQ-R009', createdAt: '2026-10-02', n: 3 },
+  ],
+  (request) => request.n,
+);
+check(
+  'the request shelf mixes simple and complex panels, and keeps a newly registered panel',
+  shelf.length === 10 &&
+    Math.min(...shelfCounts) === 1 &&
+    Math.max(...shelfCounts) === 96 &&
+    shelfCounts.filter((count) => count <= 17).length >= 4 &&
+    shelfCounts.filter((count) => count >= 80).length >= 4 &&
+    withFresh.length === 10 &&
+    withFresh[0].id === 'REQ-R009' &&
+    withFresh.some((request) => request.n === 1) &&
+    withFresh.some((request) => request.n === 96),
+  shelf.map((request) => `${request.panelId ?? request.id}:${request.drafts.length}`).join(', '),
 );
 check(
   'catalog requests spread unique molecules across a 96-well plate',

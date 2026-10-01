@@ -83,6 +83,48 @@ export function newestFirst<T extends { id: string }>(items: T[], dateOf: (item:
   return [...items].sort((a, b) => dateOf(b).localeCompare(dateOf(a)) || b.id.localeCompare(a.id));
 }
 
+/** Alternate the simplest and most complex panels so the shelf is not one kind of request. */
+export function mixedByComplexity<T extends { id: string }>(
+  items: T[],
+  complexity: (item: T) => number,
+  limit: number,
+): T[] {
+  if (limit <= 0) return [];
+  const ranked = [...items].sort(
+    (a, b) => complexity(a) - complexity(b) || a.id.localeCompare(b.id),
+  );
+  if (ranked.length <= limit) return ranked;
+  const simpleCount = Math.ceil(limit / 2);
+  const simple = ranked.slice(0, simpleCount);
+  const complex = ranked.slice(-(limit - simpleCount));
+  const mixed: T[] = [];
+  for (let i = 0; mixed.length < limit; i++) {
+    const next = i % 2 === 0 ? (complex.pop() ?? simple.shift()) : (simple.shift() ?? complex.pop());
+    if (!next) break;
+    mixed.push(next);
+  }
+  return mixed;
+}
+
+/**
+ * The Request shelf stays at the latest-panel limit. Panels registered on a
+ * later day stay visible, and the remaining places alternate simple and complex.
+ */
+export function requestShelf<T extends { id: string; createdAt: string }>(
+  items: T[],
+  complexity: (item: T) => number,
+  limit = LATEST_PANELS,
+): T[] {
+  if (items.length <= limit) return newestFirst(items, (item) => item.createdAt);
+  const byDate = newestFirst(items, (item) => item.createdAt);
+  const dates = new Set(items.map((item) => item.createdAt));
+  const fresh =
+    dates.size > 1 ? byDate.filter((item) => item.createdAt === byDate[0].createdAt).slice(0, limit) : [];
+  const freshIds = new Set(fresh.map((item) => item.id));
+  const rest = items.filter((item) => !freshIds.has(item.id));
+  return [...fresh, ...mixedByComplexity(rest, complexity, limit - fresh.length)];
+}
+
 /** A1–H12 on a 96-well plate. Index 0 is A1. */
 export function wellLabel(index: number): string {
   const row = 'ABCDEFGH'[Math.floor(index / 12)] ?? 'H';

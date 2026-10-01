@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { designPlaced, matchFormat } from '../model/design';
-import { chainByArchetype, chainUid, LATEST_PANELS, newestFirst } from '../model/luma';
+import { chainByArchetype, chainUid, newestFirst, requestShelf } from '../model/luma';
 import type { LumaBook } from '../model/luma';
 import type { DraftMolecule, LumaPanel, PadDesign, RequestDoc, Seed } from '../model/types';
 import { DesignPad } from './DesignPad';
@@ -41,7 +41,9 @@ export function RequestRail({
     shown.filter((r) => r.status === 'registered'),
     (request) => request.createdAt,
   );
-  const registeredCut = q ? registeredRanked : registeredRanked.slice(0, LATEST_PANELS);
+  const registeredCut = q
+    ? registeredRanked
+    : requestShelf(registeredRanked, (request) => request.drafts.length);
   const activeRegistered = !q && activeId ? registeredRanked.find((request) => request.id === activeId) : undefined;
   const registered =
     activeRegistered && !registeredCut.some((request) => request.id === activeId)
@@ -78,7 +80,7 @@ export function RequestRail({
             rows={registered}
             activeId={activeId}
             onOpen={onOpen}
-            note={olderHidden ? 'Search to find an older panel' : undefined}
+            note={olderHidden ? 'Search to find another panel' : undefined}
           />
         </div>
       ) : null}
@@ -197,9 +199,7 @@ export function RequestBench({
   onAdd,
   onRegister,
   onOpenMolecule,
-  onOpenRequest,
   onDeleteDraft,
-  query,
 }: {
   seed: Seed;
   book: LumaBook;
@@ -211,9 +211,7 @@ export function RequestBench({
   onAdd: () => void;
   onRegister: (draftIds: string[]) => void;
   onOpenMolecule: (draft: DraftMolecule) => void;
-  onOpenRequest: (id: string, design?: PadDesign) => void;
   onDeleteDraft: (id: string) => void;
-  query: string;
 }) {
   const matched = matchFormat(seed, design);
   const chainIds = matched
@@ -239,15 +237,6 @@ export function RequestBench({
   }
   const toggleGroup = (id: string) =>
     setGrouped((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
-  const q = query.trim().toLowerCase();
-  const rankedPanels = newestFirst(book.panels, (panel) => panel.registeredAt);
-  const matchedPanels = q
-    ? rankedPanels.filter((panel) =>
-        [panel.id, panel.name, panel.project, panel.requestId].join(' ').toLowerCase().includes(q),
-      )
-    : rankedPanels.slice(0, LATEST_PANELS);
-  const catalog = matchedPanels.filter((panel) => panel.id !== request?.panelId);
-  const olderPanels = q ? 0 : Math.max(rankedPanels.length - LATEST_PANELS, 0);
 
   return (
     <main className="panel list req-bench">
@@ -378,38 +367,6 @@ export function RequestBench({
             </div>
           </>
         )}
-        <section className="glyph-board">
-          <h3>Panels in Luma</h3>
-          {olderPanels ? <p className="sm">Showing the 10 latest. Search to find an older panel.</p> : null}
-          {catalog.map((panel) => {
-            const molecules = book.molecules.filter((m) => m.panelId === panel.id);
-            return (
-              <article key={panel.id} className="glyph-panel">
-                <div className="glyph-head">
-                  <h3>
-                    {panel.name} <span className="mono">{panel.id}</span>
-                  </h3>
-                  <span className="sm">
-                    {molecules.length} molecule{molecules.length === 1 ? '' : 's'} · {panel.chainIds.length} chain
-                    {panel.chainIds.length === 1 ? '' : 's'}
-                  </span>
-                </div>
-                <div className="glyph-grid">
-                  {molecules.map((molecule) => (
-                    <MoleculeCard
-                      key={molecule.id}
-                      name={molecule.name}
-                      uid={molecule.id}
-                      note={molecule.formatId}
-                      design={molecule.design}
-                      onOpen={() => onOpenRequest(panel.requestId, molecule.design)}
-                    />
-                  ))}
-                </div>
-              </article>
-            );
-          })}
-        </section>
       </div>
     </main>
   );
