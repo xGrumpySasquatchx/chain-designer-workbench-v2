@@ -20,6 +20,7 @@ function SelectionFolders({
   requestItems,
   expressionItems,
   ratioByVector,
+  comboByVector,
 }: {
   seed: Seed;
   model: Model;
@@ -30,6 +31,7 @@ function SelectionFolders({
   requestItems?: { id: string; label: string; note: string }[];
   expressionItems?: { id: string; label: string; note: string }[];
   ratioByVector?: Record<string, string>;
+  comboByVector?: Record<string, string>;
 }) {
   const [open, setOpen] = useState<Set<string>>(
     () => new Set(['fmt', 'chn', 'var', 'mut', 'con', 'exp']),
@@ -100,7 +102,7 @@ function SelectionFolders({
         .map((v) => ({
           id: v.id,
           label: v.id,
-          note: [v.insert, ratioByVector?.[v.id]].filter(Boolean).join(' · '),
+          note: [v.insert, comboByVector?.[v.id], ratioByVector?.[v.id]].filter(Boolean).join(' · '),
         })),
     },
     {
@@ -153,7 +155,9 @@ export function BuildPanel({
   registerTitle,
   onRegister,
   ratioText,
+  combinationText,
   ratioByVector,
+  comboByVector,
   onReset,
   onRuleOut,
   onRestore,
@@ -180,7 +184,9 @@ export function BuildPanel({
   registerTitle: string;
   onRegister: () => void;
   ratioText?: string;
+  combinationText?: string;
   ratioByVector?: Record<string, string>;
+  comboByVector?: Record<string, string>;
   onReset: () => void;
   onRuleOut: (id: string) => void;
   onRestore: (grain: Grain, id: string) => void;
@@ -259,6 +265,7 @@ export function BuildPanel({
             requestItems={requestItems}
             expressionItems={expressionItems}
             ratioByVector={ratioByVector}
+            comboByVector={comboByVector}
           />
           {model.conflicts.slice(0, 4).map((c) => (
             <div className="note" key={c}>
@@ -309,6 +316,7 @@ export function BuildPanel({
                       outs.map(([, id]) => id),
                       model.conflicts,
                       ratioText,
+                      combinationText,
                     ),
                   )
                 }

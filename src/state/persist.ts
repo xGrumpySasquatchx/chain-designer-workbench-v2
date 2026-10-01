@@ -39,6 +39,7 @@ export function defaultState(): State {
     expression: EMPTY_EXPRESSION,
     expressionRegistrations: [],
     chainRatios: {},
+    constructGroups: {},
   };
 }
 
@@ -89,6 +90,7 @@ export function loadState(): State {
       });
     }
     if (isRatioMap(r.chainRatios)) base.chainRatios = r.chainRatios;
+    if (isGroupMap(r.constructGroups)) base.constructGroups = r.constructGroups;
   } catch {
     return defaultState();
   }
@@ -138,6 +140,11 @@ function isRegistration(value: unknown): value is ExpressionRegistration {
     record.inserts.every((id) => typeof id === 'string') &&
     typeof record.registeredAt === 'string'
   );
+}
+
+function isGroupMap(value: unknown): value is Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.entries(value).every(([key, group]) => typeof key === 'string' && typeof group === 'string' && group.length > 0);
 }
 
 function isRatioMap(value: unknown): value is Record<string, number> {

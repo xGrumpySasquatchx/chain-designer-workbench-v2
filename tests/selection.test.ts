@@ -11,6 +11,7 @@ import { EMPTY_DESIGN, joinCTerm, matchFormat, removeCTerm, setBlockTarget } fro
 import { archetypeIdsOf, assembleBook, chainUid, registerRequest } from '../src/model/luma';
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
 import { EMPTY_EXPRESSION, registerExpression, withHost } from '../src/model/expression';
+import { groupConstructs, planCombinations, ungroupConstructs } from '../src/model/combinations';
 import { planChainRatios } from '../src/model/ratio';
 import { buildSlots, slotsFor } from '../src/model/slots';
 import { facetTokens, rowHasFacet } from '../src/model/facets';
@@ -638,6 +639,35 @@ check(
   'two scFv-Fc arms share the catalog one-to-one ratio',
   arms.rows.every((row) => row.parts === 1) && arms.catalog === 'Arm A:Arm B 1:1',
   arms.formatId ?? '',
+);
+
+const iggVectors = ['pDM-HC-IgG1-WT', 'pDM-LC-kappa-WT'];
+const together = planCombinations(iggVectors, {}, false);
+const split = ungroupConstructs({}, iggVectors, ['pDM-LC-kappa-WT'], false);
+const splitPlan = planCombinations(iggVectors, split, false);
+const rejoined = groupConstructs(split, iggVectors, iggVectors, false);
+check(
+  'an IgG co-transfection can be ungrouped and related again',
+  together.length === 1 &&
+    together[0].label === 'One co-transfection' &&
+    splitPlan.length === 2 &&
+    splitPlan[1].vectorIds.join() === 'pDM-LC-kappa-WT' &&
+    Object.keys(rejoined).length === 0 &&
+    planCombinations(iggVectors, rejoined, false).length === 1,
+  splitPlan.map((combo) => combo.vectorIds.join('+')).join(' | '),
+);
+const duo = ['pDM-HC-IgG1-DuoA', 'pDM-HC-IgG1-DuoB', 'pDM-LC-kappa-WT', 'pDM-LC-kappa-WT2'];
+const duoRatio = planChainRatios(seed, ['CH-06', 'CH-18', 'CH-19'], new Set(duo), {});
+const apart = planCombinations(duo, {}, duoRatio.separate);
+const related = groupConstructs({}, duo, ['pDM-HC-IgG1-DuoA', 'pDM-LC-kappa-WT'], true);
+const relatedPlan = planCombinations(duo, related, true);
+check(
+  'a separate-transfection catalog can relate two constructs and leave the others apart',
+  duoRatio.separate &&
+    apart.length === duo.length &&
+    relatedPlan.length === 3 &&
+    relatedPlan.some((combo) => combo.vectorIds.length === 2),
+  `${apart.length} · ${relatedPlan.map((combo) => combo.vectorIds.length).join(',')}`,
 );
 
 console.log('\nAll selection checks passed.');

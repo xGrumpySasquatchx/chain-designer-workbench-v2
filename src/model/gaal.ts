@@ -78,6 +78,7 @@ export function buildListText(
   outs: string[],
   conflicts: string[],
   ratioText = '',
+  combinationText = '',
 ): string {
   const F = Object.fromEntries(seed.formats.map((f) => [f.id, f]));
   const V = Object.fromEntries(seed.vectors.map((v) => [v.id, v]));
@@ -112,6 +113,13 @@ export function buildListText(
   if (outs.length) {
     L.push('', 'Ruled out');
     outs.forEach((x) => L.push(`  ${x}`));
+  }
+  if (combinationText.trim()) {
+    L.push('', 'Construct combinations');
+    combinationText
+      .split('\n')
+      .filter(Boolean)
+      .forEach((line) => L.push(`  ${line}`));
   }
   if (ratioText.trim()) {
     L.push('', 'Chain ratio');

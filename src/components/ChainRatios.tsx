@@ -45,10 +45,12 @@ function PartsField({
 
 export function ChainRatios({
   plan,
+  split,
   onChange,
   onReset,
 }: {
   plan: ChainRatioPlan;
+  split?: boolean;
   onChange: (chainId: string, parts: number) => void;
   onReset: () => void;
 }) {
@@ -72,8 +74,8 @@ export function ChainRatios({
             {plan.catalog
               ? `Catalog ${plan.formatId}: ${plan.catalog}.`
               : 'This set of chains has no catalog ratio yet.'}{' '}
-            {plan.separate
-              ? 'These chains go out as separate transfections.'
+            {plan.separate || split
+              ? 'These chains are split across transfections. Parts still record the planned mix for each chain.'
               : 'Parts are the share of each chain in one co-transfection.'}
             {plan.note && !plan.separate ? ` ${plan.note}.` : ''}
           </p>

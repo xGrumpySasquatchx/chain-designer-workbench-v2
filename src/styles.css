@@ -381,6 +381,17 @@ textarea.search{min-height:66px; resize:vertical; font-family:"IBM Plex Mono",mo
 .ratio-rows{display:flex; flex-direction:column; gap:4px; margin-top:8px}
 .ratio-row{display:grid; grid-template-columns:minmax(160px,1.6fr) 88px 76px; gap:8px; align-items:center;
   padding:4px 0; border-top:1px solid var(--rule-2)}
+.combo-actions{display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end}
+.combo-list{display:flex; flex-direction:column; gap:8px; margin-top:8px}
+.combo{border:1px solid var(--rule); border-radius:8px; padding:8px}
+.combo-head{display:flex; align-items:center; justify-content:space-between; gap:8px}
+.combo-head label{display:flex; align-items:center; gap:6px}
+.combo-head select{width:auto; min-width:140px}
+.combo-members{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px}
+.combo-member{appearance:none; text-align:left; border:1px solid var(--rule); background:var(--card);
+  color:var(--ink); font:inherit; border-radius:6px; padding:6px 8px; cursor:pointer}
+.combo-member.on{border-color:var(--grain); background:var(--grain-bg)}
+.combo-member .sm{display:block}
 .ratio-input{width:76px; padding:4px 6px; border:1px solid var(--rule); border-radius:3px;
   background:var(--card); color:var(--ink); font:inherit; font-family:"IBM Plex Mono",monospace}
 .ratio-input:focus{outline:2px solid var(--grain); outline-offset:-1px; border-color:transparent}

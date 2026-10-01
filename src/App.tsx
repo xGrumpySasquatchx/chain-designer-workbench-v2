@@ -6,6 +6,7 @@ import seedJson from './data/seed.json';
 import vregionsJson from './data/vregions.json';
 import { BuildPanel } from './components/BuildPanel';
 import { ChainRatios } from './components/ChainRatios';
+import { ConstructCombinations } from './components/ConstructCombinations';
 import { ExpressionBench, ExpressionRail } from './components/ExpressionBench';
 import { FacetRail, type FacetDef } from './components/FacetRail';
 import { InventoryCell } from './components/InventoryCell';
@@ -15,6 +16,12 @@ import { FoldBtn, ResizeGrip, useSidePanels } from './components/SidePanels';
 import { PanelPick, RequestBench, RequestRail } from './components/RequestBench';
 import { VariableRegions } from './components/VariableRegions';
 import { VLibraryRail } from './components/VLibraryRail';
+import {
+  combinationText,
+  groupConstructs,
+  planCombinations,
+  ungroupConstructs,
+} from './model/combinations';
 import { EMPTY_DESIGN, matchFormat } from './model/design';
 import {
   CODON_METHODS,
@@ -212,6 +219,11 @@ const MUT_COLS: Col[] = [
 ];
 const CON_COLS: Col[] = [
   { h: 'Vector', cls: 'idc', cell: (r) => String(r.id), sort: (r) => String(r.id) },
+  {
+    h: 'Combination',
+    cell: (r) => (r.combo ? <span className="nm">{String(r.combo)}</span> : <span className="sm">—</span>),
+    sort: (r) => String(r.combo ?? ''),
+  },
   {
     h: 'You supply',
     cell: (r) => (
@@ -450,6 +462,14 @@ export default function App() {
     state.chainRatios,
     panelFormats,
   );
+  const buildVectors = seed.vectors.map((vector) => vector.id).filter((id) => model.buildV.has(id));
+  const combinations = planCombinations(buildVectors, state.constructGroups, ratioPlan.separate);
+  const comboByVector: Record<string, string> = {};
+  combinations.forEach((combo) => {
+    combo.vectorIds.forEach((id) => {
+      comboByVector[id] = combo.label;
+    });
+  });
   const ratioByVector: Record<string, string> = {};
   ratioPlan.rows.forEach((row) => {
     const bit = `${row.chainId} ${row.parts}`;
@@ -465,6 +485,7 @@ export default function App() {
       vnames: (vByVec[r.id] ?? []).join(' · '),
       reuseNote: link ? `${role} · ${link.moleculeIds.length} molecules · ${link.chainIds.length} chains` : '',
       chainRatio: ratioByVector[r.id] ?? '',
+      combo: comboByVector[r.id] ?? '',
     };
   });
   const waiting = !activePanel && (grain === 'chn' || grain === 'mut' || grain === 'con');
@@ -925,19 +946,41 @@ export default function App() {
             notice={notice}
             lead={
               grain === 'con' ? (
-                <ChainRatios
-                  plan={ratioPlan}
-                  onChange={(chainId, parts) =>
-                    setState((s) => ({ ...s, chainRatios: { ...s.chainRatios, [chainId]: parts } }))
-                  }
-                  onReset={() =>
-                    setState((s) => {
-                      const chainRatios = { ...s.chainRatios };
-                      ratioPlan.rows.forEach((row) => delete chainRatios[row.chainId]);
-                      return { ...s, chainRatios };
-                    })
-                  }
-                />
+                <>
+                  <ConstructCombinations
+                    combinations={combinations}
+                    inserts={Object.fromEntries(seed.vectors.map((vector) => [vector.id, vector.insert]))}
+                    separate={ratioPlan.separate}
+                    customized={Object.keys(state.constructGroups).length > 0}
+                    onGroup={(ids) =>
+                      setState((s) => ({
+                        ...s,
+                        constructGroups: groupConstructs(s.constructGroups, buildVectors, ids, ratioPlan.separate),
+                      }))
+                    }
+                    onUngroup={(ids) =>
+                      setState((s) => ({
+                        ...s,
+                        constructGroups: ungroupConstructs(s.constructGroups, buildVectors, ids, ratioPlan.separate),
+                      }))
+                    }
+                    onReset={() => setState((s) => ({ ...s, constructGroups: {} }))}
+                  />
+                  <ChainRatios
+                    plan={ratioPlan}
+                    split={combinations.length > 1}
+                    onChange={(chainId, parts) =>
+                      setState((s) => ({ ...s, chainRatios: { ...s.chainRatios, [chainId]: parts } }))
+                    }
+                    onReset={() =>
+                      setState((s) => {
+                        const chainRatios = { ...s.chainRatios };
+                        ratioPlan.rows.forEach((row) => delete chainRatios[row.chainId]);
+                        return { ...s, chainRatios };
+                      })
+                    }
+                  />
+                </>
               ) : undefined
             }
             onMark={(id, v) => setMark(grain, id, v)}
@@ -966,7 +1009,9 @@ export default function App() {
           registered={expressionRegistered}
           registerTitle={registerTitle}
           ratioText={ratioSummary(ratioPlan)}
+          combinationText={combinationText(combinations)}
           ratioByVector={ratioByVector}
+          comboByVector={comboByVector}
           onRegister={() => {
             const inserts = expressionRows.map((row) => row.insert);
             setState((s) => {

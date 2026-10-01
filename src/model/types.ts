@@ -300,6 +300,8 @@ export interface State {
   expression: ExpressionPlan;
   expressionRegistrations: ExpressionRegistration[];
   chainRatios: Record<string, number>;
+  /** Construct id to combination key. Constructs that share a key are co-transfected. */
+  constructGroups: Record<string, string>;
 }
 
 export interface Model {
