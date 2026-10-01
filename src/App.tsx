@@ -597,16 +597,19 @@ export default function App() {
           }
           onGrain={(g) => setState((s) => ({ ...s, grain: g }))}
         />
-        {isVar || isReq || isExp ? null : (
-          <input
-            className="tool-filter"
-            type="search"
-            placeholder="Filter documents"
-            aria-label="Filter documents"
-            value={query[grain] ?? ''}
-            onChange={(e) => setQuery((qs) => ({ ...qs, [grain]: e.target.value }))}
-          />
-        )}
+        <input
+          className={`tool-filter${isVar || isReq || isExp ? ' is-idle' : ''}`}
+          type="search"
+          placeholder="Filter documents"
+          aria-label="Filter documents"
+          aria-hidden={isVar || isReq || isExp}
+          tabIndex={isVar || isReq || isExp ? -1 : 0}
+          value={isVar || isReq || isExp ? '' : (query[grain] ?? '')}
+          onChange={(e) => {
+            if (isVar || isReq || isExp) return;
+            setQuery((qs) => ({ ...qs, [grain]: e.target.value }));
+          }}
+        />
         <button
           className="btn sm"
           type="button"
