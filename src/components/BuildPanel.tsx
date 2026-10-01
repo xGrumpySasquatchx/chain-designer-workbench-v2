@@ -158,6 +158,7 @@ export function BuildPanel({
   combinationText,
   ratioByVector,
   comboByVector,
+  onPublish,
   onReset,
   onRuleOut,
   onRestore,
@@ -187,6 +188,7 @@ export function BuildPanel({
   combinationText?: string;
   ratioByVector?: Record<string, string>;
   comboByVector?: Record<string, string>;
+  onPublish: () => void;
   onReset: () => void;
   onRuleOut: (id: string) => void;
   onRestore: (grain: Grain, id: string) => void;
@@ -322,6 +324,17 @@ export function BuildPanel({
                 }
               >
                 {copied === 'Copy build list' ? 'Copied' : 'Copy build list'}
+              </button>
+              <button
+                className="btn"
+                type="button"
+                onClick={() => {
+                  onPublish();
+                  setCopied('Publish protein Report');
+                  window.setTimeout(() => setCopied(''), 1600);
+                }}
+              >
+                {copied === 'Publish protein Report' ? 'Downloaded' : 'Publish protein Report'}
               </button>
             </div>
           </div>

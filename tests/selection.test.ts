@@ -12,6 +12,8 @@ import { archetypeIdsOf, assembleBook, chainUid, registerRequest } from '../src/
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
 import { EMPTY_EXPRESSION, registerExpression, withHost } from '../src/model/expression';
 import { groupConstructs, planCombinations, ungroupConstructs } from '../src/model/combinations';
+import { textPdf } from '../src/model/pdf';
+import { recipeLines } from '../src/model/recipe';
 import { planChainRatios } from '../src/model/ratio';
 import { buildSlots, slotsFor } from '../src/model/slots';
 import { facetTokens, rowHasFacet } from '../src/model/facets';
@@ -668,6 +670,47 @@ check(
     relatedPlan.length === 3 &&
     relatedPlan.some((combo) => combo.vectorIds.length === 2),
   `${apart.length} · ${relatedPlan.map((combo) => combo.vectorIds.length).join(',')}`,
+);
+
+const recipe = recipeLines({
+  generatedOn: '2026-10-01',
+  activePanelId: 'PN-005',
+  panels: [
+    {
+      id: 'PN-005',
+      name: 'IgG mAb',
+      requestId: 'REQ-005',
+      project: 'mAb',
+      molecules: [{ id: 'MOL-F-001', name: 'IgG1 mAb · A1', formatId: 'F-001' }],
+      chains: [],
+    },
+    {
+      id: 'PN-R001',
+      name: 'Second panel',
+      requestId: 'REQ-R001',
+      project: 'mAb',
+      molecules: [{ id: 'MOL-R001', name: 'Custom', formatId: 'F-001' }],
+      chains: [{ id: 'LCH-CH-01', name: 'Heavy chain, conventional' }],
+    },
+  ],
+  buildChains: [{ id: 'CH-01', name: 'Heavy chain, conventional' }],
+  regions: [{ vector: 'pDM-HC-IgG1-WT', domain: 'VH', insert: 'aPD1-01-VH' }],
+  mutations: [],
+  combinations: [{ label: 'One co-transfection', members: 'pDM-HC-IgG1-WT + pDM-LC-kappa-WT' }],
+  ratioLines: ['CH-01 1 · CH-18 1.5'],
+  expressionLines: ['Transient', 'Mammalian'],
+});
+const recipePdf = new TextDecoder().decode(textPdf(recipe));
+check(
+  'a protein recipe report is a PDF with one chapter per panel',
+  recipe.some((line) => line.includes('Panel  IgG mAb')) &&
+    recipe.some((line) => line.includes('Panel  Second panel')) &&
+    recipe.some((line) => line.includes('One co-transfection')) &&
+    recipe.some((line) => line === '  Transient') &&
+    recipePdf.startsWith('%PDF-1.4') &&
+    recipePdf.includes('IgG mAb') &&
+    recipePdf.includes('Second panel') &&
+    recipePdf.includes('%%EOF'),
 );
 
 console.log('\nAll selection checks passed.');

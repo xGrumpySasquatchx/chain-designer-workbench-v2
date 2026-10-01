@@ -22,6 +22,8 @@ import {
   planCombinations,
   ungroupConstructs,
 } from './model/combinations';
+import { downloadPdf, textPdf } from './model/pdf';
+import { recipeLines, type RecipePanel } from './model/recipe';
 import { EMPTY_DESIGN, matchFormat } from './model/design';
 import {
   CODON_METHODS,
@@ -1012,6 +1014,62 @@ export default function App() {
           combinationText={combinationText(combinations)}
           ratioByVector={ratioByVector}
           comboByVector={comboByVector}
+          onPublish={() => {
+            const chapter = (panel: (typeof book.panels)[number]): RecipePanel => ({
+              id: panel.id,
+              name: panel.name,
+              requestId: panel.requestId,
+              project: panel.project,
+              molecules: book.molecules
+                .filter((molecule) => molecule.panelId === panel.id)
+                .map((molecule) => ({ id: molecule.id, name: molecule.name, formatId: molecule.formatId })),
+              chains: panel.chainIds.map((uid) => {
+                const archetype = uid.replace(/^LCH-/, '');
+                return { id: uid, name: seed.chains.find((chain) => chain.id === archetype)?.name ?? archetype };
+              }),
+            });
+            const extras = book.panels.filter((panel) => panel.id.startsWith('PN-R') && panel.id !== activePanel?.id);
+            const panels = [...(activePanel ? [chapter(activePanel)] : []), ...extras.map(chapter)];
+            const bytes = textPdf(
+              recipeLines({
+                generatedOn: new Date().toISOString().slice(0, 10),
+                activePanelId: activePanel?.id ?? null,
+                panels,
+                buildChains: seed.chains
+                  .filter((chain) => model.buildC.has(chain.id))
+                  .map((chain) => ({ id: chain.id, name: chain.name })),
+                regions: expressionRows.map((row) => ({
+                  vector: row.vector,
+                  domain: row.domain,
+                  insert: row.insert,
+                })),
+                mutations: mutations
+                  .filter((mutation) => model.buildM.has(mutation.id))
+                  .map((mutation) => ({ id: mutation.id, name: mutation.name })),
+                combinations: combinations.map((combo) => ({
+                  label: combo.label,
+                  members: combo.vectorIds.join(' + '),
+                })),
+                ratioLines: ratioSummary(ratioPlan).split('\n').filter(Boolean),
+                expressionLines: [
+                  state.expression.mode ? scenarioById(state.expression.mode).name : '',
+                  state.expression.host ? hostById(state.expression.host).name : '',
+                  state.expression.codon
+                    ? (CODON_METHODS.find((method) => method.id === state.expression.codon)?.label ?? '')
+                    : '',
+                  state.expression.host && state.expression.codonTable
+                    ? codonTableName(state.expression.host, state.expression.codonTable)
+                    : '',
+                  ...state.expressionRegistrations.map(
+                    (record) =>
+                      `${record.id}  ${scenarioById(record.mode).name}  ${hostById(record.host).name}  ${record.registeredAt}`,
+                  ),
+                ].filter(Boolean),
+              }),
+            );
+            const fileId = panels.length === 1 ? panels[0].id : 'panels';
+            downloadPdf(`protein-recipe-${fileId}.pdf`, bytes);
+          }}
           onRegister={() => {
             const inserts = expressionRows.map((row) => row.insert);
             setState((s) => {
