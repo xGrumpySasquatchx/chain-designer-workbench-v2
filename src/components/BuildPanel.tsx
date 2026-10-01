@@ -59,22 +59,15 @@ function SelectionFolders({
     k: string;
     name: string;
     items: { id: string; label: string; note: string }[];
-    empty: string;
   }[] = [
     {
       k: 'fmt',
       name: 'Request',
-      empty: 'Register a panel, then open it on Level 1.',
-      items: requestItems?.length
-        ? requestItems
-        : seed.formats
-            .filter((f) => model.inF.has(f.id))
-            .map((f) => ({ id: f.id, label: f.name, note: f.id })),
+      items: requestItems ?? [],
     },
     {
       k: 'chn',
       name: 'Chain',
-      empty: 'Include a chain from the panel on Level 1.',
       items: seed.chains
         .filter((c) => model.buildC.has(c.id))
         .map((c) => ({ id: c.id, label: c.name, note: c.id })),
@@ -82,13 +75,11 @@ function SelectionFolders({
     {
       k: 'var',
       name: 'Variable regions',
-      empty: 'Assign V regions on Level 2.',
       items: vItems,
     },
     {
       k: 'mut',
       name: 'Mutations',
-      empty: 'No mutation sets in this build.',
       items: mutations
         .filter((m) => model.buildM.has(m.id))
         .map((m) => ({ id: m.id, label: m.name, note: m.id })),
@@ -96,7 +87,6 @@ function SelectionFolders({
     {
       k: 'con',
       name: 'Construct',
-      empty: 'Constructs appear once a chain is in the build.',
       items: seed.vectors
         .filter((v) => model.buildV.has(v.id))
         .map((v) => ({
@@ -108,10 +98,9 @@ function SelectionFolders({
     {
       k: 'exp',
       name: 'Expression',
-      empty: 'Choose a production scenario, a host, and a codon method on Level 5.',
       items: expressionItems ?? [],
     },
-  ];
+  ].filter((folder) => folder.items.length > 0);
 
   return (
     <>
@@ -123,16 +112,12 @@ function SelectionFolders({
           open={open.has(f.k)}
           onToggle={() => toggle(f.k)}
         >
-          {f.items.length ? (
-            f.items.map((it) => (
-              <div className="src-doc viewer-sel" key={it.id}>
-                <span>{it.label}</span>
-                {it.note && it.note !== it.label ? <span className="sm">{it.note}</span> : null}
-              </div>
-            ))
-          ) : (
-            <div className="src-empty">{f.empty}</div>
-          )}
+          {f.items.map((it) => (
+            <div className="src-doc viewer-sel" key={it.id}>
+              <span>{it.label}</span>
+              {it.note && it.note !== it.label ? <span className="sm">{it.note}</span> : null}
+            </div>
+          ))}
         </SrcFolder>
       ))}
     </>
@@ -221,6 +206,16 @@ export function BuildPanel({
     setCopied(label);
     window.setTimeout(() => setCopied(''), 1600);
   };
+  const hasWork =
+    (requestItems?.length ?? 0) > 0 ||
+    model.buildC.size > 0 ||
+    model.buildM.size > 0 ||
+    model.buildV.size > 0 ||
+    (expressionItems?.length ?? 0) > 0 ||
+    Boolean(variants.trim() || library.trim()) ||
+    Object.values(assign).some((row) => Object.keys(row).length > 0) ||
+    outs.length > 0 ||
+    model.conflicts.length > 0;
 
   return (
     <aside className={`panel basket${expanded ? '' : ' is-folded'}`} aria-label="Document viewer">
@@ -289,62 +284,63 @@ export function BuildPanel({
               </div>
             </div>
           ) : null}
-          <div className="sec" style={{ borderBottom: 0 }}>
-            <div className="row">
-              <button
-                className="btn primary"
-                type="button"
-                disabled={!canRegister}
-                title={registerTitle}
-                onClick={() => {
-                  onRegister();
-                  setCopied('Register constructs');
-                  window.setTimeout(() => setCopied(''), 1600);
-                }}
-              >
-                {copied === 'Register constructs' || registered ? 'Registered' : 'Register constructs'}
-              </button>
-              <button
-                className="btn"
-                type="button"
-                onClick={() =>
-                  flash(
-                    'Copy build list',
-                    buildListText(
-                      seed,
-                      model.inF,
-                      model.buildV,
-                      variants,
-                      outs.map(([, id]) => id),
-                      model.conflicts,
-                      ratioText,
-                      combinationText,
-                    ),
-                  )
-                }
-              >
-                {copied === 'Copy build list' ? 'Copied' : 'Copy build list'}
-              </button>
-              <button
-                className="btn"
-                type="button"
-                onClick={() => {
-                  onPublish();
-                  setCopied('Publish protein Report');
-                  window.setTimeout(() => setCopied(''), 1600);
-                }}
-              >
-                {copied === 'Publish protein Report' ? 'Downloaded' : 'Publish protein Report'}
-              </button>
+          {hasWork ? (
+            <div className="sec" style={{ borderBottom: 0 }}>
+              <div className="row">
+                <button
+                  className="btn primary"
+                  type="button"
+                  disabled={!canRegister}
+                  title={registerTitle}
+                  onClick={() => {
+                    onRegister();
+                    setCopied('Register constructs');
+                    window.setTimeout(() => setCopied(''), 1600);
+                  }}
+                >
+                  {copied === 'Register constructs' || registered ? 'Registered' : 'Register constructs'}
+                </button>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() =>
+                    flash(
+                      'Copy build list',
+                      buildListText(
+                        seed,
+                        model.inF,
+                        model.buildV,
+                        variants,
+                        outs.map(([, id]) => id),
+                        model.conflicts,
+                        ratioText,
+                        combinationText,
+                      ),
+                    )
+                  }
+                >
+                  {copied === 'Copy build list' ? 'Copied' : 'Copy build list'}
+                </button>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => {
+                    onPublish();
+                    setCopied('Publish protein Report');
+                    window.setTimeout(() => setCopied(''), 1600);
+                  }}
+                >
+                  {copied === 'Publish protein Report' ? 'Downloaded' : 'Publish protein Report'}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : null}
         </>
       ) : null}
-      {view === 'backbone' ? (
+      {view === 'backbone' && back.length ? (
         <div className="sec" style={{ borderBottom: 0 }}>
           <h3>Backbone</h3>
-          {back.length ? (
-            <div className="chips">
+          <div className="chips">
               {back.map((id) => {
                 const sl = slotChip(V[id]);
                 return (
@@ -358,20 +354,15 @@ export function BuildPanel({
                 );
               })}
             </div>
-          ) : (
-            <div className="empty">Include a chain on Level 1 and its constructs land here.</div>
-          )}
         </div>
       ) : null}
-      {view === 'handoff' ? (
+      {view === 'handoff' && slots.length ? (
         <div className="sec" style={{ borderBottom: 0 }}>
           <h3>Text view</h3>
           <p style={{ margin: '0 0 7px', fontSize: 12, color: 'var(--ink-2)' }}>
-            {slots.length
-              ? `${n ? `${n} build${n > 1 ? 's' : ''}` : '1 build'} x ${slots.length} V region${
-                  slots.length > 1 ? 's' : ''
-                } = ${nv * slots.length} parts into ${nv * plas} assemblies.`
-              : 'Include a chain on Level 1 first.'}
+            {`${n ? `${n} build${n > 1 ? 's' : ''}` : '1 build'} x ${slots.length} V region${
+              slots.length > 1 ? 's' : ''
+            } = ${nv * slots.length} parts into ${nv * plas} assemblies.`}
           </p>
           <div className="row">
             <button
@@ -409,9 +400,10 @@ export function BuildPanel({
           </p>
         </div>
       ) : null}
-      {view === 'saved' ? (
+      {view === 'saved' && (back.length || presets.length) ? (
         <div className="sec" style={{ borderBottom: 0 }}>
-          <h3>Saved backbones</h3>
+          {back.length || presets.length ? <h3>Saved backbones</h3> : null}
+          {back.length ? (
           <div className="row">
             <input
               className="search"
@@ -432,7 +424,8 @@ export function BuildPanel({
               Save
             </button>
           </div>
-          <div style={{ marginTop: 6 }}>
+          ) : null}
+          <div style={{ marginTop: back.length ? 6 : 0 }}>
             {presets.length ? (
               presets.map((p, i) => (
                 <div className="preset" key={`${p.name}-${i}`}>
@@ -446,9 +439,7 @@ export function BuildPanel({
                   </button>
                 </div>
               ))
-            ) : (
-              <div className="empty">Save a setup once, reapply it on every run.</div>
-            )}
+            ) : null}
           </div>
         </div>
       ) : null}

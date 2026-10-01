@@ -1043,11 +1043,15 @@ export default function App() {
           mutations={mutations}
           presets={state.presets}
           requestItems={
-            activePanel
-              ? book.molecules
-                  .filter((m) => m.panelId === activePanel.id)
-                  .map((m) => ({ id: m.id, label: m.name, note: `${m.id} · ${m.formatId}` }))
-              : undefined
+            openRequest?.status === 'draft' && openRequest.drafts.length
+              ? openRequest.drafts.map((draft) => ({
+                  id: draft.id,
+                  label: draft.name,
+                  note: [draft.id.startsWith('MOL-') ? draft.id : '', draft.formatId ?? ''].filter(Boolean).join(' · '),
+                }))
+              : activePanel && model.buildC.size
+                ? [{ id: activePanel.id, label: activePanel.name, note: activePanel.id }]
+                : []
           }
           expressionItems={expressionItems}
           canRegister={canRegister}
