@@ -296,6 +296,7 @@ export interface State {
   userMolecules: LumaMolecule[];
   expression: ExpressionPlan;
   expressionRegistrations: ExpressionRegistration[];
+  chainRatios: Record<string, number>;
 }
 
 export interface Model {

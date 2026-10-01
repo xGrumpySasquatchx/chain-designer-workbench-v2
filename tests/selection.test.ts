@@ -11,6 +11,7 @@ import { EMPTY_DESIGN, joinCTerm, matchFormat, removeCTerm, setBlockTarget } fro
 import { archetypeIdsOf, assembleBook, chainUid, registerRequest } from '../src/model/luma';
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
 import { EMPTY_EXPRESSION, registerExpression, withHost } from '../src/model/expression';
+import { planChainRatios } from '../src/model/ratio';
 import { buildSlots, slotsFor } from '../src/model/slots';
 import { facetTokens, rowHasFacet } from '../src/model/facets';
 import type { InventoryBook, Mutation, Seed, Sel, VPanel, VRegion } from '../src/model/types';
@@ -586,6 +587,33 @@ const membrane = withHost({ ...EMPTY_EXPRESSION, targetClass: 'membrane' }, 'eco
 check(
   'a membrane target keeps E. coli selectable and names its codon table',
   membrane.host === 'ecoli' && membrane.codonTable === 'ecoli-k12',
+);
+
+const iggRatio = planChainRatios(seed, ['CH-01', 'CH-18'], new Set(['pDM-HC-IgG1-WT', 'pDM-LC-kappa-WT']), {});
+const iggParts = Object.fromEntries(iggRatio.rows.map((row) => [row.chainId, row.parts]));
+check(
+  'an IgG build starts from the catalog heavy to light ratio',
+  iggRatio.catalog === 'HC:LC 1:1.5' && iggParts['CH-01'] === 1 && iggParts['CH-18'] === 1.5,
+  `${iggRatio.formatId} · ${JSON.stringify(iggParts)}`,
+);
+const kihRatio = planChainRatios(seed, ['CH-02', 'CH-03', 'CH-18'], new Set(), {});
+const kihParts = Object.fromEntries(kihRatio.rows.map((row) => [row.chainId, row.parts]));
+check(
+  'a knob and hole build gives the common light chain twice the heavy-chain parts',
+  kihParts['CH-02'] === 1 && kihParts['CH-03'] === 1 && kihParts['CH-18'] === 2,
+  `${kihRatio.formatId} · ${JSON.stringify(kihParts)}`,
+);
+const edited = planChainRatios(seed, ['CH-01', 'CH-18'], new Set(), { 'CH-18': 2 });
+check(
+  'a chain ratio override replaces the catalog part',
+  edited.rows.find((row) => row.chainId === 'CH-18')?.parts === 2 &&
+    edited.rows.find((row) => row.chainId === 'CH-18')?.overridden === true,
+);
+const arms = planChainRatios(seed, ['CH-31', 'CH-32'], new Set(), {});
+check(
+  'two scFv-Fc arms share the catalog one-to-one ratio',
+  arms.rows.every((row) => row.parts === 1) && arms.catalog === 'Arm A:Arm B 1:1',
+  arms.formatId ?? '',
 );
 
 console.log('\nAll selection checks passed.');

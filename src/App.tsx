@@ -5,6 +5,7 @@ import panelsJson from './data/panels.json';
 import seedJson from './data/seed.json';
 import vregionsJson from './data/vregions.json';
 import { BuildPanel } from './components/BuildPanel';
+import { ChainRatios } from './components/ChainRatios';
 import { ExpressionBench, ExpressionRail } from './components/ExpressionBench';
 import { FacetRail, type FacetDef } from './components/FacetRail';
 import { InventoryCell } from './components/InventoryCell';
@@ -51,6 +52,7 @@ import {
   variantList,
 } from './model/library';
 import { applyMutations } from './model/mutations';
+import { planChainRatios, ratioSummary } from './model/ratio';
 import { emptySel, facetsActive, matchingIds, resolve } from './model/selection';
 import { buildSlots } from './model/slots';
 import type {
@@ -218,6 +220,12 @@ const CON_COLS: Col[] = [
       </>
     ),
     sort: (r) => String(r.insert),
+  },
+  {
+    h: 'Chain ratio',
+    cell: (r) =>
+      r.chainRatio ? <span className="nm">{String(r.chainRatio)}</span> : <span className="sm">—</span>,
+    sort: (r) => String(r.chainRatio ?? ''),
   },
   {
     h: 'Variable regions',
@@ -434,6 +442,20 @@ export default function App() {
         : '',
     };
   });
+  const ratioPlan = planChainRatios(
+    seed,
+    model.buildC,
+    model.buildV,
+    state.chainRatios,
+    panelFormats,
+  );
+  const ratioByVector: Record<string, string> = {};
+  ratioPlan.rows.forEach((row) => {
+    const bit = `${row.chainId} ${row.parts}`;
+    row.vectors.forEach((id) => {
+      ratioByVector[id] = ratioByVector[id] ? `${ratioByVector[id]} · ${bit}` : bit;
+    });
+  });
   const vectorRows: Row[] = withStock(seed.vectors as Vector[], inventory.constructs).map((r) => {
     const link = book.constructs.find((c) => c.id === r.id);
     const role = link?.role === 'reagent' ? 'Reagent' : 'Campaign';
@@ -441,6 +463,7 @@ export default function App() {
       ...r,
       vnames: (vByVec[r.id] ?? []).join(' · '),
       reuseNote: link ? `${role} · ${link.moleculeIds.length} molecules · ${link.chainIds.length} chains` : '',
+      chainRatio: ratioByVector[r.id] ?? '',
     };
   });
   const waiting = !activePanel && (grain === 'chn' || grain === 'mut' || grain === 'con');
@@ -888,6 +911,23 @@ export default function App() {
             hideOut={state.hideOut}
             text={text}
             notice={notice}
+            lead={
+              grain === 'con' ? (
+                <ChainRatios
+                  plan={ratioPlan}
+                  onChange={(chainId, parts) =>
+                    setState((s) => ({ ...s, chainRatios: { ...s.chainRatios, [chainId]: parts } }))
+                  }
+                  onReset={() =>
+                    setState((s) => {
+                      const chainRatios = { ...s.chainRatios };
+                      ratioPlan.rows.forEach((row) => delete chainRatios[row.chainId]);
+                      return { ...s, chainRatios };
+                    })
+                  }
+                />
+              ) : undefined
+            }
             onMark={(id, v) => setMark(grain, id, v)}
             onHideOut={() => setState((s) => ({ ...s, hideOut: !s.hideOut }))}
           />
@@ -913,6 +953,8 @@ export default function App() {
           canRegister={canRegister}
           registered={expressionRegistered}
           registerTitle={registerTitle}
+          ratioText={ratioSummary(ratioPlan)}
+          ratioByVector={ratioByVector}
           onRegister={() => {
             const inserts = expressionRows.map((row) => row.insert);
             setState((s) => {

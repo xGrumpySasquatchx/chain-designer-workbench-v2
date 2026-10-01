@@ -19,6 +19,7 @@ function SelectionFolders({
   mutations,
   requestItems,
   expressionItems,
+  ratioByVector,
 }: {
   seed: Seed;
   model: Model;
@@ -28,6 +29,7 @@ function SelectionFolders({
   mutations: Mutation[];
   requestItems?: { id: string; label: string; note: string }[];
   expressionItems?: { id: string; label: string; note: string }[];
+  ratioByVector?: Record<string, string>;
 }) {
   const [open, setOpen] = useState<Set<string>>(
     () => new Set(['fmt', 'chn', 'var', 'mut', 'con', 'exp']),
@@ -95,7 +97,11 @@ function SelectionFolders({
       empty: 'Constructs appear once a chain is in the build.',
       items: seed.vectors
         .filter((v) => model.buildV.has(v.id))
-        .map((v) => ({ id: v.id, label: v.id, note: v.insert })),
+        .map((v) => ({
+          id: v.id,
+          label: v.id,
+          note: [v.insert, ratioByVector?.[v.id]].filter(Boolean).join(' · '),
+        })),
     },
     {
       k: 'exp',
@@ -146,6 +152,8 @@ export function BuildPanel({
   registered,
   registerTitle,
   onRegister,
+  ratioText,
+  ratioByVector,
   onReset,
   onRuleOut,
   onRestore,
@@ -171,6 +179,8 @@ export function BuildPanel({
   registered: boolean;
   registerTitle: string;
   onRegister: () => void;
+  ratioText?: string;
+  ratioByVector?: Record<string, string>;
   onReset: () => void;
   onRuleOut: (id: string) => void;
   onRestore: (grain: Grain, id: string) => void;
@@ -248,6 +258,7 @@ export function BuildPanel({
             mutations={mutations}
             requestItems={requestItems}
             expressionItems={expressionItems}
+            ratioByVector={ratioByVector}
           />
           {model.conflicts.slice(0, 4).map((c) => (
             <div className="note" key={c}>
@@ -297,6 +308,7 @@ export function BuildPanel({
                       variants,
                       outs.map(([, id]) => id),
                       model.conflicts,
+                      ratioText,
                     ),
                   )
                 }

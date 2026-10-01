@@ -77,6 +77,7 @@ export function buildListText(
   variants: string,
   outs: string[],
   conflicts: string[],
+  ratioText = '',
 ): string {
   const F = Object.fromEntries(seed.formats.map((f) => [f.id, f]));
   const V = Object.fromEntries(seed.vectors.map((v) => [v.id, v]));
@@ -111,6 +112,13 @@ export function buildListText(
   if (outs.length) {
     L.push('', 'Ruled out');
     outs.forEach((x) => L.push(`  ${x}`));
+  }
+  if (ratioText.trim()) {
+    L.push('', 'Chain ratio');
+    ratioText
+      .split('\n')
+      .filter(Boolean)
+      .forEach((line) => L.push(`  ${line}`));
   }
   if (conflicts.length) {
     L.push('', 'Check');

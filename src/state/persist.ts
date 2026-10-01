@@ -36,6 +36,7 @@ export function defaultState(): State {
     userMolecules: [],
     expression: EMPTY_EXPRESSION,
     expressionRegistrations: [],
+    chainRatios: {},
   };
 }
 
@@ -78,6 +79,7 @@ export function loadState(): State {
     if (Array.isArray(r.expressionRegistrations)) {
       base.expressionRegistrations = r.expressionRegistrations.filter(isRegistration);
     }
+    if (isRatioMap(r.chainRatios)) base.chainRatios = r.chainRatios;
   } catch {
     return defaultState();
   }
@@ -124,6 +126,13 @@ function isRegistration(value: unknown): value is ExpressionRegistration {
     Array.isArray(record.inserts) &&
     record.inserts.every((id) => typeof id === 'string') &&
     typeof record.registeredAt === 'string'
+  );
+}
+
+function isRatioMap(value: unknown): value is Record<string, number> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.entries(value).every(
+    ([key, parts]) => typeof key === 'string' && typeof parts === 'number' && Number.isFinite(parts) && parts >= 0,
   );
 }
 

@@ -56,6 +56,7 @@ export function RowTable({
   hideOut,
   text,
   notice,
+  lead,
   onMark,
   onHideOut,
 }: {
@@ -70,6 +71,7 @@ export function RowTable({
   hideOut: boolean;
   text: (row: Row) => string;
   notice?: string;
+  lead?: ReactNode;
   onMark: (id: string, v: Mark) => void;
   onHideOut: () => void;
 }) {
@@ -197,6 +199,7 @@ export function RowTable({
           </button>
         )}
       </div>
+      {lead}
       <div className="rows">
         <table>
           <thead>
