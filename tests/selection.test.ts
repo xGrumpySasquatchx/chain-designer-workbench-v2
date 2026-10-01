@@ -444,6 +444,18 @@ check(
   seed.formats.every((f) => formatIds.has(f.id)) && book.panels.length > 0,
   `${book.molecules.length} molecules in ${book.panels.length} panels`,
 );
+const catalogCounts = book.panels
+  .filter((panel) => /^PN-\d+$/.test(panel.id))
+  .map((panel) => panel.moleculeIds.length);
+check(
+  'catalog requests spread unique molecules across a 96-well plate',
+  catalogCounts.length > 1 &&
+    catalogCounts.every((count) => count >= 1 && count <= 96) &&
+    catalogCounts.includes(1) &&
+    catalogCounts.includes(96) &&
+    new Set(catalogCounts).size > 10,
+  catalogCounts.join(','),
+);
 check(
   'every chain and construct shares the panel graph',
   seed.chains.every((c) => book.chains.some((l) => l.archetypeId === c.id && l.moleculeIds.length > 0)) &&
@@ -562,7 +574,10 @@ check(
   `${grouped?.request.id} · ${grouped?.remaining.map((d) => d.id).join(',')}`,
 );
 
-const secreted = withHost({ ...EMPTY_EXPRESSION, targetClass: 'secreted', codon: 'adapt' }, 'mammalian');
+const secreted = withHost(
+  { ...EMPTY_EXPRESSION, targetClass: 'secreted', codon: 'adapt', mode: 'transient' },
+  'mammalian',
+);
 const first = registerExpression([], secreted, ['pDM-HC-IgG1-WT', 'pDM-LC-kappa-WT'], ['VH', 'VL']);
 const again = registerExpression(first ? [first] : [], secreted, ['pDM-LC-kappa-WT', 'pDM-HC-IgG1-WT'], ['VH', 'VL']);
 const recoded = registerExpression(
@@ -571,17 +586,26 @@ const recoded = registerExpression(
   ['pDM-HC-IgG1-WT', 'pDM-LC-kappa-WT'],
   ['VH', 'VL'],
 );
+const stable = registerExpression(
+  [first, recoded].filter((record) => !!record),
+  { ...secreted, mode: 'stable' },
+  ['pDM-HC-IgG1-WT', 'pDM-LC-kappa-WT'],
+  ['VH', 'VL'],
+);
 check(
-  'expression registration records the host and codon choice once',
+  'expression registration records the host, codon choice, and production scenario once',
   !!first &&
     first.id === 'EXP-001' &&
     first.host === 'mammalian' &&
     first.codonTable === 'human' &&
+    first.mode === 'transient' &&
     first.vectorIds.join(',') === 'pDM-HC-IgG1-WT,pDM-LC-kappa-WT' &&
     again === null &&
     recoded?.id === 'EXP-002' &&
-    recoded.codon === 'harmonize',
-  `${first?.id} · ${recoded?.id}`,
+    recoded.codon === 'harmonize' &&
+    stable?.id === 'EXP-003' &&
+    stable.mode === 'stable',
+  `${first?.id} · ${recoded?.id} · ${stable?.id}`,
 );
 const membrane = withHost({ ...EMPTY_EXPRESSION, targetClass: 'membrane' }, 'ecoli');
 check(

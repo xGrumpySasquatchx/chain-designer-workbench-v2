@@ -1,5 +1,6 @@
 import type {
   CodonMethod,
+  ExpressionMode,
   ExpressionPlan,
   ExpressionRegistration,
   HostId,
@@ -35,7 +36,60 @@ export const EMPTY_EXPRESSION: ExpressionPlan = {
   host: null,
   codonTable: null,
   codon: null,
+  mode: null,
 };
+
+export interface ProductionScenario {
+  id: ExpressionMode;
+  name: string;
+  posture: string;
+  mechanism: string;
+  iteration: string;
+  volume: string;
+  output: string;
+  selection: string;
+  best: string;
+}
+
+export const SCENARIOS: ProductionScenario[] = [
+  {
+    id: 'transient',
+    name: 'Transient',
+    posture: 'Many constructs, small to moderate scale, fast turnaround.',
+    mechanism:
+      'Plasmid DNA or mRNA is introduced into HEK293 or CHO with PEI, a lipid reagent, or electroporation. The DNA stays episomal and is diluted or degraded as cells divide, so expression peaks around days 3 to 10 and then declines.',
+    iteration:
+      'About 1 to 3 weeks from plasmid to purified protein, and highly parallel. Discovery groups run hundreds to thousands of constructs per campaign in 96-well deep-well blocks or 24-well plates, and can redesign and rerun within the same month. A sequence change is a new plasmid.',
+    volume:
+      'About 1 mL in a screening well, up to 1 to 10 L for a larger batch, and occasionally 100 L or more in a wave or stirred-tank system.',
+    output: 'Titers of 0.1 to 3 g/L. A well yields micrograms; a larger batch yields grams.',
+    selection: 'None. The DNA is not maintained, so every batch is a new transfection.',
+    best: 'Candidate selection, bispecific chain pairings and ratios, and early characterization.',
+  },
+  {
+    id: 'stable',
+    name: 'Stable',
+    posture: 'Few constructs, large scale, slow turnaround.',
+    mechanism:
+      'The gene cassette integrates into the host chromosome, so every daughter cell carries it. Cells are selected, pools are expanded, and clones are screened for titer, growth, product quality, and long-term stability. Integration is random, or targeted to a landing pad with Cre/lox, Flp/FRT, Bxb1, or CRISPR.',
+    iteration:
+      '3 to 6 months per construct with random integration, or about 6 to 10 weeks with a targeted landing pad. Programs usually take 1 to 3 leads into stable development, sometimes up to about 5 on a landing-pad platform. A sequence change after that point restarts the line.',
+    volume: 'Shake flasks through 2,000 to 20,000 L stirred-tank bioreactors.',
+    output: 'Titers of 3 to 10 g/L in fed-batch CHO. A single batch can yield tens of kilograms.',
+    selection: 'Glutamine synthetase or DHFR with MSX or methotrexate, or an antibiotic marker.',
+    best: 'Clinical and commercial supply, where a clonal line and documented genetic stability are expected.',
+  },
+];
+
+export const STABLE_POOL =
+  'A stable pool is selected but not cloned. It yields more material than a transient run within a few weeks, typically 10 to 200 L at 1 to 5 g/L, and is often used for preclinical or toxicology material while clonal lines are still in development. The pool is heterogeneous and can drift over passages.';
+
+export const SCENARIO_HANDOFF =
+  'Transient work is wide and shallow: many sequences, a small amount of each, and rapid redesign. Stable work is narrow and deep: a handful of sequences, very large amounts, and a costly change. The handoff is where iteration freezes, so chain format, pairing, and liability removal carry into a less flexible process. Glycosylation, charge variants, and bispecific mispairing can also shift between transient HEK material and stable CHO material, so developability data should be checked again at that point.';
+
+export function scenarioById(id: ExpressionMode): ProductionScenario {
+  return SCENARIOS.find((scenario) => scenario.id === id) ?? SCENARIOS[0];
+}
 
 export const TARGET_CLASSES: { id: TargetClass; label: string }[] = [
   { id: 'secreted', label: 'Soluble, secreted' },
@@ -172,7 +226,7 @@ export function targetFit(host: HostSystem, target: TargetClass | null): { rate:
 }
 
 export function planReady(plan: ExpressionPlan): boolean {
-  return Boolean(plan.targetClass && plan.host && plan.codonTable && plan.codon);
+  return Boolean(plan.targetClass && plan.host && plan.codonTable && plan.codon && plan.mode);
 }
 
 export function withHost(plan: ExpressionPlan, host: HostId): ExpressionPlan {
@@ -194,7 +248,8 @@ export function registrationMatches(
     record.targetClass === plan.targetClass &&
     record.host === plan.host &&
     record.codonTable === plan.codonTable &&
-    record.codon === plan.codon
+    record.codon === plan.codon &&
+    record.mode === plan.mode
   );
 }
 
@@ -204,7 +259,7 @@ export function registerExpression(
   vectorIds: string[],
   inserts: string[],
 ): ExpressionRegistration | null {
-  if (!planReady(plan) || !plan.targetClass || !plan.host || !plan.codonTable || !plan.codon) return null;
+  if (!planReady(plan) || !plan.targetClass || !plan.host || !plan.codonTable || !plan.codon || !plan.mode) return null;
   if (!vectorIds.length) return null;
   const sorted = [...vectorIds].sort();
   if (existing.some((record) => registrationMatches(record, plan, sorted))) return null;
@@ -218,6 +273,7 @@ export function registerExpression(
     host: plan.host,
     codonTable: plan.codonTable,
     codon: plan.codon,
+    mode: plan.mode,
     vectorIds: sorted,
     inserts,
     registeredAt: new Date().toISOString().slice(0, 10),

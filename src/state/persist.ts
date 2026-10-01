@@ -2,6 +2,7 @@ import { EMPTY_EXPRESSION } from '../model/expression';
 import { emptySel } from '../model/selection';
 import type {
   CodonMethod,
+  ExpressionMode,
   ExpressionPlan,
   ExpressionRegistration,
   Grain,
@@ -16,6 +17,7 @@ import type {
 const TARGETS: TargetClass[] = ['secreted', 'intracellular', 'membrane'];
 const HOST_IDS: HostId[] = ['ecoli', 'yeast', 'insect', 'mammalian', 'cellfree'];
 const CODONS: CodonMethod[] = ['adapt', 'harmonize', 'rare', 'keep'];
+const MODES: ExpressionMode[] = ['transient', 'stable'];
 
 const KEY = 'protein-chain-workbench-v2';
 
@@ -75,9 +77,16 @@ export function loadState(): State {
     if (Array.isArray(r.requests)) base.requests = r.requests.filter(isRequest);
     if (Array.isArray(r.userPanels)) base.userPanels = r.userPanels.filter(isPanel);
     if (Array.isArray(r.userMolecules)) base.userMolecules = r.userMolecules.filter(isMolecule);
-    if (isPlan(r.expression)) base.expression = r.expression;
+    if (isPlan(r.expression)) base.expression = { ...EMPTY_EXPRESSION, ...r.expression, mode: r.expression.mode ?? null };
     if (Array.isArray(r.expressionRegistrations)) {
-      base.expressionRegistrations = r.expressionRegistrations.filter(isRegistration);
+      base.expressionRegistrations = r.expressionRegistrations.flatMap((value) => {
+        if (!value || typeof value !== 'object') return [];
+        const record = value as ExpressionRegistration;
+        const mode = oneOf(record.mode, MODES) ?? (record.mode == null ? 'transient' : null);
+        if (!mode) return [];
+        const next = { ...record, mode };
+        return isRegistration(next) ? [next] : [];
+      });
     }
     if (isRatioMap(r.chainRatios)) base.chainRatios = r.chainRatios;
   } catch {
@@ -109,7 +118,8 @@ function isPlan(value: unknown): value is ExpressionPlan {
   const hostOk = plan.host === null || oneOf(plan.host, HOST_IDS) !== null;
   const codonOk = plan.codon === null || oneOf(plan.codon, CODONS) !== null;
   const tableOk = plan.codonTable === null || typeof plan.codonTable === 'string';
-  return targetOk && hostOk && codonOk && tableOk;
+  const modeOk = plan.mode == null || oneOf(plan.mode, MODES) !== null;
+  return targetOk && hostOk && codonOk && tableOk && modeOk;
 }
 
 function isRegistration(value: unknown): value is ExpressionRegistration {
@@ -121,6 +131,7 @@ function isRegistration(value: unknown): value is ExpressionRegistration {
     oneOf(record.host, HOST_IDS) !== null &&
     typeof record.codonTable === 'string' &&
     oneOf(record.codon, CODONS) !== null &&
+    oneOf(record.mode, MODES) !== null &&
     Array.isArray(record.vectorIds) &&
     record.vectorIds.every((id) => typeof id === 'string') &&
     Array.isArray(record.inserts) &&

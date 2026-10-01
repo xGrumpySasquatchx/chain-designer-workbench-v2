@@ -22,6 +22,7 @@ import {
   codonTableName,
   hostById,
   planReady,
+  scenarioById,
   registerExpression,
   registrationMatches,
   withHost,
@@ -564,7 +565,7 @@ export default function App() {
   );
   const canRegister = planReady(state.expression) && expressionVectors.length > 0 && !expressionRegistered;
   const registerTitle = !planReady(state.expression)
-    ? 'Choose an expression system and a codon optimization method on Level 5.'
+    ? 'Choose a production scenario, an expression system, and a codon optimization method on Level 5.'
     : expressionVectors.length === 0
       ? 'Include a chain on Level 1 so its constructs can be registered.'
       : expressionRegistered
@@ -577,6 +578,7 @@ export default function App() {
             id: 'plan',
             label: hostById(state.expression.host).name,
             note: [
+              state.expression.mode ? scenarioById(state.expression.mode).name : 'Choose transient or stable',
               TARGET_CLASSES.find((target) => target.id === state.expression.targetClass)?.label ?? '',
               state.expression.codon
                 ? (CODON_METHODS.find((method) => method.id === state.expression.codon)?.label ?? '')
@@ -593,7 +595,7 @@ export default function App() {
     ...state.expressionRegistrations.map((record) => ({
       id: record.id,
       label: record.id,
-      note: `${hostById(record.host).name} · ${
+      note: `${scenarioById(record.mode).name} · ${hostById(record.host).name} · ${
         CODON_METHODS.find((method) => method.id === record.codon)?.label ?? ''
       } · ${record.vectorIds.length} construct${record.vectorIds.length === 1 ? '' : 's'}`,
     })),
@@ -612,10 +614,14 @@ export default function App() {
           builds={variantList(state.variants).length}
           requestCount={`${state.requests.filter((r) => r.status === 'draft').length} drafts · ${book.panels.length} panels`}
           expressionCount={
-            state.expression.host
-              ? `${hostById(state.expression.host).name}${
-                  state.expressionRegistrations.length ? ` · ${state.expressionRegistrations.length}` : ''
-                }`
+            state.expression.mode || state.expression.host
+              ? [
+                  state.expression.mode ? scenarioById(state.expression.mode).name : null,
+                  state.expression.host ? hostById(state.expression.host).name : null,
+                  state.expressionRegistrations.length ? String(state.expressionRegistrations.length) : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
               : 'choose'
           }
           onGrain={(g) => setState((s) => ({ ...s, grain: g }))}
@@ -659,13 +665,17 @@ export default function App() {
                 : grain === 'mut'
                   ? `${model.buildM.size} in build, ${model.reachM.size} available`
                   : grain === 'exp'
-                    ? state.expression.host
-                      ? `${hostById(state.expression.host).name}${
-                          state.expression.codon
-                            ? ` · ${CODON_METHODS.find((method) => method.id === state.expression.codon)?.label}`
-                            : ' · choose a codon method'
-                        }`
-                      : 'Choose a target class and an expression system'
+                    ? [
+                        state.expression.mode ? scenarioById(state.expression.mode).name : 'Choose transient or stable',
+                        state.expression.host
+                          ? hostById(state.expression.host).name
+                          : 'choose an expression system',
+                        state.expression.codon
+                          ? CODON_METHODS.find((method) => method.id === state.expression.codon)?.label
+                          : 'choose a codon method',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')
                     : `${model.buildV.size} in build, ${model.reachV.size} available`}
         </span>
         <span className="stat-grow" />
@@ -760,6 +770,7 @@ export default function App() {
               setState((s) => ({ ...s, expression: { ...s.expression, targetClass } }))
             }
             onHost={(host) => setState((s) => ({ ...s, expression: withHost(s.expression, host) }))}
+            onMode={(mode) => setState((s) => ({ ...s, expression: { ...s.expression, mode } }))}
           />
         ) : (
           <FacetRail
@@ -880,6 +891,7 @@ export default function App() {
               setState((s) => ({ ...s, expression: { ...s.expression, codonTable } }))
             }
             onCodon={(codon) => setState((s) => ({ ...s, expression: { ...s.expression, codon } }))}
+            onMode={(mode) => setState((s) => ({ ...s, expression: { ...s.expression, mode } }))}
           />
         ) : isVar ? (
           <VariableRegions

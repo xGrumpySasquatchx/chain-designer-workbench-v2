@@ -73,10 +73,36 @@ export interface UserRegistry {
   molecules: LumaMolecule[];
 }
 
+const PLATE_WELLS = 96;
+
+/** A1–H12 on a 96-well plate. Index 0 is A1. */
+export function wellLabel(index: number): string {
+  const row = 'ABCDEFGH'[Math.floor(index / 12)] ?? 'H';
+  return `${row}${(index % 12) + 1}`;
+}
+
 /**
- * Every seed format is one molecule, grouped into a Luma panel by the chains it
- * uses. Chain UIDs are shared, so a light chain registered once is the same
- * chain on every molecule that pairs with it.
+ * Unique molecules on one catalog request. The count walks from 1 to 96 across
+ * the panels, and never drops an architecture that already belongs there.
+ * The first single-format request stays at one well so the range includes 1.
+ */
+function plateFills(formatCounts: number[]): number[] {
+  const last = Math.max(formatCounts.length - 1, 1);
+  const fills = formatCounts.map((count, index) => {
+    const span = Math.round(1 + (index * (PLATE_WELLS - 1)) / last);
+    return Math.min(PLATE_WELLS, Math.max(count, span));
+  });
+  const singleton = formatCounts.findIndex((count) => count === 1);
+  if (singleton >= 0) fills[singleton] = 1;
+  return fills;
+}
+
+/**
+ * Seed formats are grouped into a Luma panel by the chains they use, then each
+ * panel is filled out to a 96-well plate. Extra wells are further unique
+ * molecules of an architecture already on that request. Chain UIDs are shared,
+ * so a light chain registered once is the same chain on every molecule that
+ * pairs with it.
  */
 export function assembleBook(
   seed: Seed,
@@ -102,25 +128,29 @@ export function assembleBook(
 
   const molecules: LumaMolecule[] = [];
   const panels: LumaPanel[] = [];
+  const fills = plateFills(ordered.map(([, formats]) => formats.length));
   ordered.forEach(([key, formats], index) => {
     const panelId = `PN-${String(index + 1).padStart(3, '0')}`;
     const requestId = `REQ-${String(index + 1).padStart(3, '0')}`;
     const formatIds = formats.map((f) => f.id);
     const chainIds = [...new Set(formats.flatMap((f) => f.chains))].map(chainUid);
     const needsV = formats.some((f) => f.half + f.full > 0);
+    const designs = formats.map((format) => designForFormat(format, seed.chains));
     const molIds: string[] = [];
-    formats.forEach((format) => {
-      const id = `MOL-${format.id}`;
+    for (let well = 0; well < fills[index]; well++) {
+      const slot = well < formats.length ? well : well % formats.length;
+      const format = formats[slot];
+      const id = well < formats.length ? `MOL-${format.id}` : `MOL-${panelId}-${wellLabel(well)}`;
       molIds.push(id);
       molecules.push({
         id,
-        name: format.name,
+        name: `${format.name} · ${wellLabel(well)}`,
         panelId,
         formatId: format.id,
         chainIds: format.chains.map(chainUid),
-        design: designForFormat(format, seed.chains),
+        design: designs[slot],
       });
-    });
+    }
     panels.push({
       id: panelId,
       name: panelTitle(key, formats.map((f) => f.name)),

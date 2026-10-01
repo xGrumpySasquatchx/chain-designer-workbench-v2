@@ -2,13 +2,23 @@ import type { ReactNode } from 'react';
 import {
   CODON_METHODS,
   HOSTS,
+  SCENARIO_HANDOFF,
+  SCENARIOS,
+  STABLE_POOL,
   TARGET_CLASSES,
   codonTableName,
   hostById,
   targetFit,
   type FitRate,
 } from '../model/expression';
-import type { CodonMethod, ExpressionPlan, ExpressionRegistration, HostId, TargetClass } from '../model/types';
+import type {
+  CodonMethod,
+  ExpressionMode,
+  ExpressionPlan,
+  ExpressionRegistration,
+  HostId,
+  TargetClass,
+} from '../model/types';
 
 function Rate({ rate, note }: { rate: FitRate; note?: string }) {
   const label = rate === 'good' ? 'Good' : rate === 'moderate' ? 'Moderate' : 'Poor';
@@ -28,6 +38,7 @@ export function ExpressionRail({
   grip,
   onTarget,
   onHost,
+  onMode,
 }: {
   plan: ExpressionPlan;
   expanded: boolean;
@@ -36,6 +47,7 @@ export function ExpressionRail({
   grip: ReactNode;
   onTarget: (target: TargetClass) => void;
   onHost: (host: HostId) => void;
+  onMode: (mode: ExpressionMode) => void;
 }) {
   return (
     <aside className={`panel rail${expanded ? '' : ' is-folded'}`} aria-label="Expression">
@@ -56,6 +68,20 @@ export function ExpressionRail({
                   onChange={() => onTarget(target.id)}
                 />
                 <span className="pn">{target.label}</span>
+              </label>
+            ))}
+          </div>
+          <div className="facet">
+            <h3>Production scenario</h3>
+            {SCENARIOS.map((scenario) => (
+              <label key={scenario.id} className="preset">
+                <input
+                  type="radio"
+                  name="expression-mode"
+                  checked={plan.mode === scenario.id}
+                  onChange={() => onMode(scenario.id)}
+                />
+                <span className="pn">{scenario.name}</span>
               </label>
             ))}
           </div>
@@ -91,6 +117,7 @@ export function ExpressionBench({
   onHost,
   onCodonTable,
   onCodon,
+  onMode,
 }: {
   plan: ExpressionPlan;
   slots: { key: string; label: string; domain: string; vector: string; insert: string }[];
@@ -99,6 +126,7 @@ export function ExpressionBench({
   onHost: (host: HostId) => void;
   onCodonTable: (id: string) => void;
   onCodon: (method: CodonMethod) => void;
+  onMode: (mode: ExpressionMode) => void;
 }) {
   const host = plan.host ? hostById(plan.host) : null;
   const fit = host ? targetFit(host, plan.targetClass) : null;
@@ -238,7 +266,66 @@ export function ExpressionBench({
         </section>
 
         <section className="glyph-panel">
-          <h3>3. Codon optimization</h3>
+          <h3>3. Production scenario</h3>
+          <p className="sm">
+            Transient expression is the discovery default. Stable clonal lines are the manufacturing path. The figures
+            below are for mammalian antibody production in HEK293 and CHO.
+          </p>
+          <div className="exp-scenarios" role="radiogroup" aria-label="Production scenario">
+            {SCENARIOS.map((scenario) => (
+              <button
+                key={scenario.id}
+                type="button"
+                className={plan.mode === scenario.id ? 'on' : ''}
+                aria-pressed={plan.mode === scenario.id}
+                onClick={() => onMode(scenario.id)}
+              >
+                <span className="nm">{scenario.name} expression</span>
+                <span className="sm">{scenario.posture}</span>
+              </button>
+            ))}
+          </div>
+          <div className="exp-table-wrap">
+            <table className="exp-compare">
+              <thead>
+                <tr>
+                  <th> </th>
+                  {SCENARIOS.map((scenario) => (
+                    <th key={scenario.id} className={plan.mode === scenario.id ? 'on' : ''}>
+                      {scenario.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(
+                  [
+                    ['Iteration', 'iteration'],
+                    ['Volume', 'volume'],
+                    ['Output', 'output'],
+                    ['Selection', 'selection'],
+                    ['Best used for', 'best'],
+                  ] as const
+                ).map(([label, key]) => (
+                  <tr key={key}>
+                    <th>{label}</th>
+                    {SCENARIOS.map((scenario) => (
+                      <td key={scenario.id} className={plan.mode === scenario.id ? 'on' : ''}>
+                        {scenario[key]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {plan.mode ? <p className="sm">{SCENARIOS.find((scenario) => scenario.id === plan.mode)?.mechanism}</p> : null}
+          <p className="sm">{STABLE_POOL}</p>
+          <p className="sm">{SCENARIO_HANDOFF}</p>
+        </section>
+
+        <section className="glyph-panel">
+          <h3>4. Codon optimization</h3>
           {host ? (
             <>
               <label className="req-name">
@@ -306,7 +393,8 @@ export function ExpressionBench({
                 <li key={record.id}>
                   <span className="nm">{record.id}</span>
                   <span className="sm">
-                    {hostById(record.host).name} · {CODON_METHODS.find((method) => method.id === record.codon)?.label} ·{' '}
+                    {SCENARIOS.find((scenario) => scenario.id === record.mode)?.name} · {hostById(record.host).name} ·{' '}
+                    {CODON_METHODS.find((method) => method.id === record.codon)?.label} ·{' '}
                     {record.vectorIds.length} construct{record.vectorIds.length === 1 ? '' : 's'} · {record.registeredAt}
                   </span>
                 </li>

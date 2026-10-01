@@ -106,7 +106,7 @@ function SelectionFolders({
     {
       k: 'exp',
       name: 'Expression',
-      empty: 'Choose a host and a codon method on Level 5.',
+      empty: 'Choose a production scenario, a host, and a codon method on Level 5.',
       items: expressionItems ?? [],
     },
   ];

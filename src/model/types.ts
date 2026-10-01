@@ -4,12 +4,14 @@ export type Grain = 'fmt' | 'chn' | 'var' | 'mut' | 'con' | 'exp';
 export type TargetClass = 'secreted' | 'intracellular' | 'membrane';
 export type HostId = 'ecoli' | 'yeast' | 'insect' | 'mammalian' | 'cellfree';
 export type CodonMethod = 'adapt' | 'harmonize' | 'rare' | 'keep';
+export type ExpressionMode = 'transient' | 'stable';
 
 export interface ExpressionPlan {
   targetClass: TargetClass | null;
   host: HostId | null;
   codonTable: string | null;
   codon: CodonMethod | null;
+  mode: ExpressionMode | null;
 }
 
 export interface ExpressionRegistration {
@@ -18,6 +20,7 @@ export interface ExpressionRegistration {
   host: HostId;
   codonTable: string;
   codon: CodonMethod;
+  mode: ExpressionMode;
   vectorIds: string[];
   inserts: string[];
   registeredAt: string;

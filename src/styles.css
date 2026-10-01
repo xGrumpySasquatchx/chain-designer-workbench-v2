@@ -294,6 +294,13 @@ textarea.search{min-height:66px; resize:vertical; font-family:"IBM Plex Mono",mo
 .glyph-head{display:flex; justify-content:space-between; gap:8px; align-items:baseline; flex-wrap:wrap}
 .glyph-panel{border:1px solid var(--rule); border-radius:8px; padding:10px; background:var(--card)}
 .glyph-panel.working{background:var(--grain-bg)}
+.plate{display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:3px; margin-top:8px}
+.well{aspect-ratio:1; border-radius:50%; border:1px solid var(--rule); display:grid; place-items:center;
+  font-family:"IBM Plex Mono",monospace; font-size:8px; color:var(--ink-3); background:transparent; padding:0; min-width:0}
+.well.filled{appearance:none; background:var(--grain-bg); color:var(--ink); border-color:var(--grain); cursor:pointer; font:inherit;
+  font-family:"IBM Plex Mono",monospace; font-size:8px}
+.well.filled:hover{background:var(--grain); color:#fff}
+.well.empty{opacity:.4}
 .glyph-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; margin-top:8px}
 .glyph-card{border:1px solid #3a3a3a; border-radius:8px; background:#212121; overflow:hidden}
 .glyph-card.on{outline:2px solid var(--grain); outline-offset:1px}
@@ -353,6 +360,15 @@ textarea.search{min-height:66px; resize:vertical; font-family:"IBM Plex Mono",mo
 .fit{display:flex; flex-direction:column; gap:2px; font-weight:650}
 .fit-good{color:var(--in)} .fit-moderate{color:var(--warn)} .fit-poor{color:var(--out)}
 .fit-note{font-weight:400; color:var(--ink-2); font-size:11px}
+.exp-scenarios{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0}
+.exp-scenarios button{appearance:none; text-align:left; border:1px solid var(--rule); background:var(--card);
+  color:var(--ink); font:inherit; border-radius:8px; padding:10px 12px; cursor:pointer}
+.exp-scenarios button.on{border-color:var(--grain); background:var(--grain-bg)}
+.exp-scenarios .nm{display:block; font-weight:650}
+.exp-scenarios .sm{display:block; margin-top:4px}
+.exp-compare{width:100%; border-collapse:collapse; font-size:12px}
+.exp-compare th,.exp-compare td{border:1px solid var(--rule-2); padding:6px 8px; vertical-align:top; text-align:left}
+.exp-compare td.on,.exp-compare th.on{background:var(--grain-bg)}
 .exp-methods{display:flex; flex-direction:column; gap:6px; margin:8px 0 12px}
 .exp-method{display:flex; gap:8px; align-items:flex-start; border:1px solid var(--rule); border-radius:6px; padding:8px; cursor:pointer}
 .exp-method.on{border-color:var(--grain); background:var(--grain-bg)}
