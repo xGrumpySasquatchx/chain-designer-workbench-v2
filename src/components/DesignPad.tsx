@@ -127,7 +127,8 @@ export function DesignPad({
       const target = join === 'right' ? d.targets[1] : d.targets[0];
       const next = joinCTerm(d, sides, kind, target);
       onChange(next);
-      setPick({ at: join === 'right' ? 'cRight' : 'cLeft', index: (join === 'right' ? next.cRight : next.cLeft).length - 1 });
+      setPick({ at: join === 'right' ? 'cRight' : 'cLeft', index: 0 });
+      setJoin(null);
       return;
     }
     if (pick?.at === 'left' || pick?.at === 'right') {
@@ -391,35 +392,59 @@ export function DesignPad({
             </g>
           );
         })}
-        <rect
-          x={(side === 'left' ? FC.cx - COL_PITCH / 2 : FC.cx + COL_PITCH / 2) - DOMAIN_W / 2}
-          y={dropY}
-          width={DOMAIN_W}
-          height={DOMAIN_H * 0.7}
-          rx={CORNER_R * 2}
-          fill={overC === side ? 'rgba(124, 221, 206, 0.12)' : 'none'}
-          stroke={overC === side ? SELECTION : '#4B4B4B'}
-          strokeWidth={STROKE_W * 1.5}
-          strokeDasharray={`${GAP / 2} ${GAP / 2}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setOverC(side);
-          }}
-          onDragLeave={() => setOverC(null)}
-          onDrop={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setOverC(null);
-            const kind = readKind(e);
-            carried = null;
-            if (!kind || isFcScaffold(kind) || bbDef(kind).fusesOnly) return;
-            const next = joinCTerm(d, [side], kind, side === 'left' ? d.targets[0] : d.targets[1]);
-            onChange(next);
-            setPick({ at, index: (side === 'left' ? next.cLeft : next.cRight).length - 1 });
-            setJoin(null);
-          }}
-        />
+        {blocks.length === 0 && (
+          <g
+            role="button"
+            aria-label={side === 'left' ? 'Left CH3' : 'Right CH3'}
+            style={{ cursor: 'pointer' }}
+            onClick={(e: MouseEvent) => {
+              e.stopPropagation();
+              setJoin(join === side ? null : side);
+              setPick(null);
+            }}
+          >
+            <rect
+              x={(side === 'left' ? FC.cx - COL_PITCH / 2 : FC.cx + COL_PITCH / 2) - DOMAIN_W / 2}
+              y={dropY}
+              width={DOMAIN_W}
+              height={DOMAIN_H * 0.7}
+              rx={CORNER_R * 2}
+              fill={overC === side || join === side ? 'rgba(124, 221, 206, 0.12)' : 'none'}
+              stroke={overC === side || join === side ? SELECTION : '#4B4B4B'}
+              strokeWidth={STROKE_W * 1.5}
+              strokeDasharray={`${GAP / 2} ${GAP / 2}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setOverC(side);
+              }}
+              onDragLeave={() => setOverC(null)}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setOverC(null);
+                const kind = readKind(e);
+                carried = null;
+                if (!kind || isFcScaffold(kind) || bbDef(kind).fusesOnly) return;
+                const next = joinCTerm(d, [side], kind, side === 'left' ? d.targets[0] : d.targets[1]);
+                onChange(next);
+                setPick({ at, index: 0 });
+                setJoin(null);
+              }}
+            />
+            <text
+              x={side === 'left' ? FC.cx - COL_PITCH / 2 : FC.cx + COL_PITCH / 2}
+              y={dropY + DOMAIN_H * 0.42}
+              textAnchor="middle"
+              fill={join === side ? SELECTION : '#8F8F8F'}
+              fontSize={14}
+              fontFamily="IBM Plex Sans, sans-serif"
+              pointerEvents="none"
+            >
+              CH3
+            </text>
+          </g>
+        )}
       </g>
     );
   }
@@ -589,9 +614,9 @@ export function DesignPad({
           <span className="lc-title">Fc C-terminus</span>
           {(
             [
-              ['left', 'Left chain'],
-              ['right', 'Right chain'],
-              ['both', 'Both chains'],
+              ['left', 'Left CH3'],
+              ['right', 'Right CH3'],
+              ['both', 'Both CH3'],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -605,8 +630,8 @@ export function DesignPad({
           ))}
           <span className="sm">
             {join
-              ? 'The next building block joins that C-terminus. Click the choice again to place on an arm instead.'
-              : 'Choose a chain, then a building block, or drop a block on the dashed target under the Fc.'}
+              ? 'The next building block joins that CH3. Click the choice again to place on an arm instead.'
+              : 'Each CH3 has one C-terminal connection. Choose a side, then a building block.'}
           </span>
         </div>
       )}
@@ -634,7 +659,7 @@ export function DesignPad({
       )}
       <p className="pair-note">
         Click a block to select it, then delete it or give it a target. The next palette block replaces the selection.
-        Drop a block under the Fc to join a C-terminus. Arms splay {ARM_TILT}° with the N-terminus at the top.
+        Each CH3 can take one building block on its C-terminus. Arms splay {ARM_TILT}° with the N-terminus at the top.
       </p>
     </div>
   );
@@ -646,7 +671,7 @@ function pickLabel(pick: SlotPick, design: PadDesign): string {
   const blocks = pick.at === 'cLeft' ? design.cLeft : design.cRight;
   const chain = pick.at === 'cLeft' ? 'left' : 'right';
   const index = 'index' in pick ? pick.index : 0;
-  return `${bbDef(blocks[index] ?? 'empty').label} · ${chain} C-terminus`;
+  return `${bbDef(blocks[index] ?? 'empty').label} · ${chain} CH3`;
 }
 
 function pickTarget(pick: SlotPick, design: PadDesign): string {

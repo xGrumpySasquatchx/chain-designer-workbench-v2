@@ -35,12 +35,12 @@ export function completeDesign(design: PadDesign): PadDesign {
 
 export type CSide = 'left' | 'right';
 
-/** Hang a block off one Fc chain, or off both. */
+/** Hang one block off a CH3 C-terminus. Each CH3 keeps a single connection. */
 export function joinCTerm(design: PadDesign, sides: CSide[], kind: BbKind, target = 'Antigen'): PadDesign {
   let next = completeDesign(design);
   for (const side of sides) {
-    if (side === 'left') next = { ...next, cLeft: [...next.cLeft, kind], cTargetLeft: [...next.cTargetLeft, target] };
-    else next = { ...next, cRight: [...next.cRight, kind], cTargetRight: [...next.cTargetRight, target] };
+    if (side === 'left') next = { ...next, cLeft: [kind], cTargetLeft: [target] };
+    else next = { ...next, cRight: [kind], cTargetRight: [target] };
   }
   return next;
 }

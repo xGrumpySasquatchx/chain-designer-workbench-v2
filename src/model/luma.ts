@@ -75,6 +75,14 @@ export interface UserRegistry {
 
 const PLATE_WELLS = 96;
 
+/** How many registered panels the Request tab shows before someone searches. */
+export const LATEST_PANELS = 10;
+
+/** Newest registration first. Panels from the same day keep the higher id. */
+export function newestFirst<T extends { id: string }>(items: T[], dateOf: (item: T) => string): T[] {
+  return [...items].sort((a, b) => dateOf(b).localeCompare(dateOf(a)) || b.id.localeCompare(a.id));
+}
+
 /** A1–H12 on a 96-well plate. Index 0 is A1. */
 export function wellLabel(index: number): string {
   const row = 'ABCDEFGH'[Math.floor(index / 12)] ?? 'H';
@@ -281,29 +289,60 @@ export function panelMutationIds(book: LumaBook, panelId: string | null): Set<st
   );
 }
 
-let mintSeq = 0;
+function nextSerial(ids: string[], pattern: RegExp): number {
+  return (
+    ids.reduce((max, id) => {
+      const match = pattern.exec(id);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0) + 1
+  );
+}
 
 function nextUserRequestId(requests: RequestDoc[]): string {
-  const n =
-    requests.reduce((max, request) => {
-      const match = /^REQ-R(\d+)$/.exec(request.id);
-      return match ? Math.max(max, Number(match[1])) : max;
-    }, 0) + 1;
+  const n = nextSerial(
+    requests.map((request) => request.id),
+    /^REQ-R(\d+)$/,
+  );
   return `REQ-R${String(n).padStart(3, '0')}`;
 }
 
-export function newRequest(existing: RequestDoc[]): RequestDoc {
-  mintSeq += 1;
-  const n = existing.filter((r) => r.id.startsWith('REQ-R')).length + mintSeq;
+function nextPanelNumber(requests: RequestDoc[], panels: { id: string }[]): string {
+  const n = nextSerial(
+    [...panels.map((panel) => panel.id), ...requests.map((request) => request.panelId ?? '')],
+    /^PNL-(\d+)$/,
+  );
+  return `PNL-${String(n).padStart(3, '0')}`;
+}
+
+/** A new request and its panel number, assigned together and kept for the rest of the build. */
+export function newRequest(
+  existing: RequestDoc[],
+  panels: { id: string }[] = [],
+): { request: RequestDoc; panel: LumaPanel } {
+  const id = nextUserRequestId(existing);
+  const n = Number(/^REQ-R(\d+)$/.exec(id)?.[1] ?? 1);
   const today = new Date().toISOString().slice(0, 10);
-  return {
-    id: `REQ-R${String(n).padStart(3, '0')}`,
+  const panelId = nextPanelNumber(existing, panels);
+  const request: RequestDoc = {
+    id,
     name: `Request ${n}`,
     createdAt: today,
     status: 'draft',
-    panelId: null,
+    panelId,
     drafts: [],
   };
+  const panel: LumaPanel = {
+    id: panelId,
+    name: request.name,
+    requestId: request.id,
+    project: request.name,
+    registeredAt: today,
+    moleculeIds: [],
+    formatIds: [],
+    chainIds: [],
+    libraryIds: [],
+  };
+  return { request, panel };
 }
 
 export interface Registration {
@@ -329,13 +368,14 @@ export function registerRequest(
   const ready = request.drafts.filter((d) => d.formatId && (!wanted || wanted.has(d.id)));
   if (!ready.length) return null;
   const remaining = request.drafts.filter((d) => !ready.some((r) => r.id === d.id));
+  const ownedPanel = Boolean(request.panelId);
   const n = book.panels.filter((p) => p.id.startsWith('PN-R')).length + 1;
-  const panelId = `PN-R${String(n).padStart(3, '0')}`;
-  const requestId = remaining.length ? nextUserRequestId(book.requests) : request.id;
+  const panelId = request.panelId ?? `PN-R${String(n).padStart(3, '0')}`;
+  const requestId = !ownedPanel && remaining.length ? nextUserRequestId(book.requests) : request.id;
   const molecules: LumaMolecule[] = ready.map((draft, i) => {
     const format = seed.formats.find((f) => f.id === draft.formatId)!;
     return {
-      id: `MOL-R${n}-${i + 1}`,
+      id: `MOL-${panelId}-${i + 1}`,
       name: draft.name,
       panelId,
       formatId: format.id,

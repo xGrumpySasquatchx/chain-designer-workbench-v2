@@ -490,7 +490,8 @@ export default function App() {
       combo: comboByVector[r.id] ?? '',
     };
   });
-  const waiting = !activePanel && (grain === 'chn' || grain === 'mut' || grain === 'con');
+  const pendingPanel = !!activePanel && activePanel.moleculeIds.length === 0;
+  const waiting = (!activePanel || pendingPanel) && (grain === 'chn' || grain === 'mut' || grain === 'con');
   const rows: Row[] = waiting
     ? []
     : grain === 'chn'
@@ -506,9 +507,11 @@ export default function App() {
       : grain === 'mut'
         ? 'Mutation sets'
         : 'Constructs';
-  const notice = waiting
-    ? 'Select a panel registered in Luma. The molecules in that panel decide which chains, mutations, and constructs you can use.'
-    : undefined;
+  const notice = pendingPanel
+    ? `${openRequest ? `${openRequest.id} · ` : ''}${activePanel.id} is assigned. Add molecules on the Request tab, then the chains, mutations, and constructs follow this panel.`
+    : waiting
+      ? 'Select a panel registered in Luma. The molecules in that panel decide which chains, mutations, and constructs you can use.'
+      : undefined;
 
   const openPanel = (id: string) => {
     const archetypes = archetypeIdsOf(book, id);
@@ -531,7 +534,9 @@ export default function App() {
     setState((s) => ({
       ...s,
       requests: s.requests.filter((r) => r.id !== id || r.status !== 'draft'),
+      userPanels: s.userPanels.filter((panel) => panel.id !== target.panelId || panel.moleculeIds.length > 0),
       activeRequestId: s.activeRequestId === id ? null : s.activeRequestId,
+      activePanelId: s.activePanelId === target.panelId ? null : s.activePanelId,
     }));
   };
   const openRequestById = (id: string) => {
@@ -675,6 +680,14 @@ export default function App() {
         </button>
       </header>
       <div className="statusbar" role="status">
+        {openRequest ? (
+          <span className="mono">
+            {openRequest.id}
+            {openRequest.panelId ? ` · ${openRequest.panelId}` : ''}
+          </span>
+        ) : activePanel ? (
+          <span className="mono">{activePanel.id}</span>
+        ) : null}
         <span>
           {grain === 'fmt'
             ? `${book.panels.length} panels registered in Luma`
@@ -769,9 +782,16 @@ export default function App() {
             }
             onQuery={(q) => setQuery((qs) => ({ ...qs, fmt: q }))}
             onNew={() => {
-              const req = newRequest(state.requests);
+              const { request, panel } = newRequest(state.requests, book.panels);
               setPad(EMPTY_DESIGN);
-              setState((s) => ({ ...s, requests: [req, ...s.requests], activeRequestId: req.id }));
+              setState((s) => ({
+                ...s,
+                requests: [request, ...s.requests],
+                userPanels: [panel, ...s.userPanels],
+                activeRequestId: request.id,
+                activePanelId: panel.id,
+                sel: { ...s.sel, fmt: {}, chn: {}, con: {}, mut: {} },
+              }));
             }}
             onOpen={openRequestById}
             onDeleteDraft={deleteDraft}
@@ -849,6 +869,11 @@ export default function App() {
                 requests: s.requests.map((r) =>
                   r.id === s.activeRequestId && r.status === 'draft' ? { ...r, name } : r,
                 ),
+                userPanels: s.userPanels.map((panel) =>
+                  panel.id === openRequest?.panelId && panel.moleculeIds.length === 0
+                    ? { ...panel, name, project: name }
+                    : panel,
+                ),
               }))
             }
             onTarget={(index, value) =>
@@ -879,18 +904,35 @@ export default function App() {
               const minted = registerRequest(book, openRequest, seed, draftIds);
               if (!minted) return;
               setState((s) => {
-                const kept = minted.remaining.length
+                const sameRequest = minted.request.id === openRequest.id;
+                const requests = sameRequest
                   ? s.requests.map((r) =>
-                      r.id === openRequest.id ? { ...r, status: 'draft' as const, panelId: null, drafts: minted.remaining } : r,
+                      r.id === openRequest.id
+                        ? minted.remaining.length
+                          ? { ...r, panelId: minted.panel.id, status: 'draft' as const, drafts: minted.remaining }
+                          : minted.request
+                        : r,
                     )
-                  : s.requests.map((r) => (r.id === openRequest.id ? minted.request : r));
+                  : minted.remaining.length
+                    ? [
+                        minted.request,
+                        ...s.requests.map((r) =>
+                          r.id === openRequest.id
+                            ? { ...r, status: 'draft' as const, panelId: null, drafts: minted.remaining }
+                            : r,
+                        ),
+                      ]
+                    : s.requests.map((r) => (r.id === openRequest.id ? minted.request : r));
+                const userPanels = s.userPanels.some((panel) => panel.id === minted.panel.id)
+                  ? s.userPanels.map((panel) => (panel.id === minted.panel.id ? minted.panel : panel))
+                  : [...s.userPanels, minted.panel];
                 return {
                   ...s,
-                  requests: minted.remaining.length ? [minted.request, ...kept] : kept,
-                  userPanels: [...s.userPanels, minted.panel],
+                  requests,
+                  userPanels,
                   userMolecules: [...s.userMolecules, ...minted.molecules],
                   activePanelId: minted.panel.id,
-                  activeRequestId: minted.request.id,
+                  activeRequestId: sameRequest ? openRequest.id : minted.request.id,
                 };
               });
             }}
@@ -900,6 +942,7 @@ export default function App() {
               if (design) setPad(design);
             }}
             onDeleteDraft={deleteDraft}
+            query={query.fmt}
           />
         ) : isExp ? (
           <ExpressionBench

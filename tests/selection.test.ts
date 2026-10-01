@@ -8,7 +8,7 @@ import { compileSearch, panelMatches, searchCatalog, treeCatalog } from '../src/
 import { locationLine, stockLine, stockStatus } from '../src/model/inventory';
 import { applyMutations, mutationRelevant, specificVectorIds } from '../src/model/mutations';
 import { EMPTY_DESIGN, joinCTerm, matchFormat, removeCTerm, setBlockTarget } from '../src/model/design';
-import { archetypeIdsOf, assembleBook, chainUid, registerRequest } from '../src/model/luma';
+import { archetypeIdsOf, assembleBook, chainUid, newestFirst, newRequest, registerRequest } from '../src/model/luma';
 import { emptySel, matchingIds, resolve, sortedIds } from '../src/model/selection';
 import { EMPTY_EXPRESSION, registerExpression, withHost } from '../src/model/expression';
 import { groupConstructs, planCombinations, ungroupConstructs } from '../src/model/combinations';
@@ -450,6 +450,18 @@ check(
 const catalogCounts = book.panels
   .filter((panel) => /^PN-\d+$/.test(panel.id))
   .map((panel) => panel.moleculeIds.length);
+const newest = newestFirst(
+  [
+    { id: 'PN-001', registeredAt: '2026-01-15' },
+    { id: 'PN-029', registeredAt: '2026-01-15' },
+    { id: 'PN-R001', registeredAt: '2026-10-01' },
+  ],
+  (panel) => panel.registeredAt,
+);
+check(
+  'the request list leads with the newest panel, and a later id wins on the same day',
+  newest.map((panel) => panel.id).join() === 'PN-R001,PN-029,PN-001',
+);
 check(
   'catalog requests spread unique molecules across a 96-well plate',
   catalogCounts.length > 1 &&
@@ -504,13 +516,17 @@ check('a Fab / Homo-Fc design matches wild-type IgG', matched?.id === 'F-001', m
 const both = joinCTerm({ ...EMPTY_DESIGN, fc: 'heterofc' }, ['left', 'right'], 'scfv', 'CD3');
 const rightOnly = removeCTerm(both, 'left', 0);
 const named = setBlockTarget(rightOnly, 'cRight', 0, 'PD-1');
+const replaced = joinCTerm(both, ['left'], 'vhh', 'HER2');
 check(
-  'a block can join one Fc C-terminus and keep its own target',
+  'each CH3 takes one C-terminal block and keeps its own target',
   both.cLeft.length === 1 &&
     both.cRight.length === 1 &&
     rightOnly.cLeft.length === 0 &&
     rightOnly.cRight[0] === 'scfv' &&
-    named.cTargetRight[0] === 'PD-1',
+    named.cTargetRight[0] === 'PD-1' &&
+    replaced.cLeft.length === 1 &&
+    replaced.cLeft[0] === 'vhh' &&
+    replaced.cRight[0] === 'scfv',
 );
 const kappa = book.chains.find((c) => c.id === chainUid('CH-18'));
 check(
@@ -544,7 +560,7 @@ check(
   'registering a request mints connected panel, molecule, and chain UIDs',
   !!minted &&
     minted.panel.id === 'PN-R001' &&
-    minted.molecules[0].id === 'MOL-R1-1' &&
+    minted.molecules[0].id === 'MOL-PN-R001-1' &&
     minted.molecules[0].chainIds.includes(chainUid('CH-18')) &&
     minted.molecules[0].chainIds.includes(chainUid('CH-01')) &&
     !minted.molecules[0].chainIds.includes(chainUid('CH-19')),
@@ -575,6 +591,37 @@ check(
     grouped.remaining[0].id === 'd2' &&
     grouped.request.id !== 'REQ-R002',
   `${grouped?.request.id} · ${grouped?.remaining.map((d) => d.id).join(',')}`,
+);
+
+const started = newRequest([], []);
+const nextWork = newRequest([started.request], [started.panel]);
+const kept = registerRequest(
+  book,
+  {
+    ...started.request,
+    drafts: [
+      { id: 'd1', name: 'Keep', design: fabDesign, formatId: 'F-001' },
+      { id: 'd2', name: 'Leave', design: fabDesign, formatId: 'F-001' },
+    ],
+  },
+  seed,
+  ['d1'],
+);
+check(
+  'a new request is born with a request number and a panel number that registration keeps',
+  started.request.id === 'REQ-R001' &&
+    started.request.panelId === 'PNL-001' &&
+    started.panel.id === 'PNL-001' &&
+    started.panel.requestId === 'REQ-R001' &&
+    nextWork.request.id === 'REQ-R002' &&
+    nextWork.panel.id === 'PNL-002' &&
+    !!kept &&
+    kept.request.id === 'REQ-R001' &&
+    kept.panel.id === 'PNL-001' &&
+    kept.molecules[0].id === 'MOL-PNL-001-1' &&
+    kept.molecules[0].panelId === 'PNL-001' &&
+    kept.remaining.length === 1,
+  `${started.request.id} · ${started.panel.id} · ${kept?.panel.id}`,
 );
 
 const secreted = withHost(

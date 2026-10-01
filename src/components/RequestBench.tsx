@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { designPlaced, matchFormat } from '../model/design';
-import { chainByArchetype, chainUid } from '../model/luma';
+import { chainByArchetype, chainUid, LATEST_PANELS, newestFirst } from '../model/luma';
 import type { LumaBook } from '../model/luma';
 import type { DraftMolecule, LumaPanel, PadDesign, RequestDoc, Seed } from '../model/types';
 import { DesignPad } from './DesignPad';
@@ -37,7 +37,17 @@ export function RequestRail({
     return [r.id, r.name, r.panelId ?? '', r.status].join(' ').toLowerCase().includes(q);
   });
   const drafts = shown.filter((r) => r.status === 'draft');
-  const registered = shown.filter((r) => r.status === 'registered');
+  const registeredRanked = newestFirst(
+    shown.filter((r) => r.status === 'registered'),
+    (request) => request.createdAt,
+  );
+  const registeredCut = q ? registeredRanked : registeredRanked.slice(0, LATEST_PANELS);
+  const activeRegistered = !q && activeId ? registeredRanked.find((request) => request.id === activeId) : undefined;
+  const registered =
+    activeRegistered && !registeredCut.some((request) => request.id === activeId)
+      ? [...registeredCut, activeRegistered]
+      : registeredCut;
+  const olderHidden = q ? 0 : registeredRanked.length - registeredCut.length;
 
   return (
     <aside className={`panel rail${expanded ? '' : ' is-folded'}`} aria-label="Requests">
@@ -63,7 +73,13 @@ export function RequestRail({
             />
           </div>
           <RequestGroup title="Drafts" rows={drafts} activeId={activeId} onOpen={onOpen} onDelete={onDeleteDraft} />
-          <RequestGroup title="Registered in Luma" rows={registered} activeId={activeId} onOpen={onOpen} />
+          <RequestGroup
+            title="Registered in Luma"
+            rows={registered}
+            activeId={activeId}
+            onOpen={onOpen}
+            note={olderHidden ? 'Search to find an older panel' : undefined}
+          />
         </div>
       ) : null}
       {expanded ? grip : null}
@@ -77,12 +93,14 @@ function RequestGroup({
   activeId,
   onOpen,
   onDelete,
+  note,
 }: {
   title: string;
   rows: RequestDoc[];
   activeId: string | null;
   onOpen: (id: string) => void;
   onDelete?: (id: string) => void;
+  note?: string;
 }) {
   return (
     <div className="src-folder">
@@ -96,9 +114,7 @@ function RequestGroup({
             <button type="button" className="req-row" onClick={() => onOpen(r.id)}>
               <span className="nm">{r.name}</span>
               <span className="sm">
-                {r.panelId
-                  ? `${r.panelId} · ${r.drafts.length} molecule${r.drafts.length === 1 ? '' : 's'}`
-                  : `${r.drafts.length} molecule${r.drafts.length === 1 ? '' : 's'} · not registered`}
+                {`${r.id}${r.panelId ? ` · ${r.panelId}` : ''} · ${r.drafts.length} molecule${r.drafts.length === 1 ? '' : 's'}`}
               </span>
             </button>
             {onDelete ? (
@@ -116,6 +132,7 @@ function RequestGroup({
       ) : (
         <div className="src-empty">None</div>
       )}
+      {note ? <div className="src-empty">{note}</div> : null}
     </div>
   );
 }
@@ -182,6 +199,7 @@ export function RequestBench({
   onOpenMolecule,
   onOpenRequest,
   onDeleteDraft,
+  query,
 }: {
   seed: Seed;
   book: LumaBook;
@@ -195,6 +213,7 @@ export function RequestBench({
   onOpenMolecule: (draft: DraftMolecule) => void;
   onOpenRequest: (id: string, design?: PadDesign) => void;
   onDeleteDraft: (id: string) => void;
+  query: string;
 }) {
   const matched = matchFormat(seed, design);
   const chainIds = matched
@@ -220,7 +239,15 @@ export function RequestBench({
   }
   const toggleGroup = (id: string) =>
     setGrouped((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
-  const catalog = book.panels.filter((p) => p.id !== request?.panelId);
+  const q = query.trim().toLowerCase();
+  const rankedPanels = newestFirst(book.panels, (panel) => panel.registeredAt);
+  const matchedPanels = q
+    ? rankedPanels.filter((panel) =>
+        [panel.id, panel.name, panel.project, panel.requestId].join(' ').toLowerCase().includes(q),
+      )
+    : rankedPanels.slice(0, LATEST_PANELS);
+  const catalog = matchedPanels.filter((panel) => panel.id !== request?.panelId);
+  const olderPanels = q ? 0 : Math.max(rankedPanels.length - LATEST_PANELS, 0);
 
   return (
     <main className="panel list req-bench">
@@ -261,7 +288,7 @@ export function RequestBench({
                   {request.name}{' '}
                   <span className="src-n">{request.drafts.length}</span>
                 </h3>
-                <span className="sm">{request.panelId ?? 'Panel UID assigned when this group is registered'}</span>
+                <span className="sm">{`${request.id}${request.panelId ? ` · ${request.panelId}` : ''}`}</span>
               </div>
               {request.drafts.length ? (
                 <div className="glyph-grid">
@@ -353,6 +380,7 @@ export function RequestBench({
         )}
         <section className="glyph-board">
           <h3>Panels in Luma</h3>
+          {olderPanels ? <p className="sm">Showing the 10 latest. Search to find an older panel.</p> : null}
           {catalog.map((panel) => {
             const molecules = book.molecules.filter((m) => m.panelId === panel.id);
             return (
